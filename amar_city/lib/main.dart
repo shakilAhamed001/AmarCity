@@ -6,7 +6,8 @@ void main() {
   setPathUrlStrategy();
   runApp(const MainApp());
 }
-
+// test 
+//test 2
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
