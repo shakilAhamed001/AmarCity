@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:url_strategy/url_strategy.dart';
 import 'screens/splash/splash_screen.dart';
+import 'screens/account/login_screen.dart';
+import 'screens/account/create_account.dart';
 
 void main() {
-  setPathUrlStrategy();
   runApp(const MainApp());
 }
-// test 
-//test 2
+
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
@@ -22,13 +21,18 @@ class MainApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       home: const SplashScreen(),
       routes: {
+        '/login': (context) => const LoginScreen(),
+        '/create_account': (context) => const CreateAccountScreen(),
         '/home': (context) => const HomePage(),
       },
     );
   }
 }
 
-// Simple Home Page - Replace with your actual home screen
+// Update Splash Screen to navigate to login instead of home
+// In splash_screen.dart, change the navigation line to:
+// Navigator.of(context).pushReplacementNamed('/login');
+
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
 
