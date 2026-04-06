@@ -65,7 +65,7 @@ class _SplashScreenState extends State<SplashScreen>
   _navigateToHome() async {
     await Future.delayed(const Duration(seconds: 3), () {});
     if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      Navigator.of(context).pushReplacementNamed('/login');
       // Or use: Navigator.of(context).pushReplacement(
       //   MaterialPageRoute(builder: (context) => const HomePage()),
       // );
@@ -224,3 +224,4 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
+
