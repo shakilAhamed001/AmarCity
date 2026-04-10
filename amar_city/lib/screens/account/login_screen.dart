@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import '../../services/supabase_service.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -34,17 +35,43 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  void _handleSignIn() {
+  bool _isLoading = false;
+
+  void _handleSignIn() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all fields')),
       );
       return;
     }
-    // Handle sign in logic here
-    print('Sign in as $_selectedRole');
-    print('Email: ${_emailController.text}');
-    Navigator.of(context).pushReplacementNamed('/home');
+    setState(() => _isLoading = true);
+    try {
+      final response = await AuthService.signIn(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+      if (response.user != null && mounted) {
+        if (_selectedRole == 'Officer') {
+          Navigator.of(context).pushReplacementNamed('/officer');
+        } else {
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        String message = e.toString();
+        if (message.contains('email_not_confirmed')) {
+          message = 'Please verify your email first. Check your inbox.';
+        } else if (message.contains('invalid_credentials')) {
+          message = 'Invalid email or password.';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -300,7 +327,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: double.infinity,
                           height: 50,
                           child: ElevatedButton(
-                            onPressed: _handleSignIn,
+                            onPressed: _isLoading ? null : _handleSignIn,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF0066CC),
                               shape: RoundedRectangleBorder(
@@ -308,7 +335,16 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               elevation: 2,
                             ),
-                            child: const Text(
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
                               'Sign in securely',
                               style: TextStyle(
                                 fontSize: 16,

@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/splash/splash_screen.dart';
 import 'screens/account/login_screen.dart';
 import 'screens/account/create_account.dart';
+import 'screens/officer/officer_screen.dart';
+import 'services/supabase_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Supabase.initialize(
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
+  );
   runApp(const MainApp());
 }
 
@@ -24,6 +32,7 @@ class MainApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/create_account': (context) => const CreateAccountScreen(),
         '/home': (context) => const HomePage(),
+        '/officer': (context) => const OfficerScreen(), // Officer route added
       },
     );
   }
@@ -34,7 +43,7 @@ class MainApp extends StatelessWidget {
 // Navigator.of(context).pushReplacementNamed('/login');
 
 class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -52,4 +61,3 @@ class HomePage extends StatelessWidget {
     );
   }
 }
-

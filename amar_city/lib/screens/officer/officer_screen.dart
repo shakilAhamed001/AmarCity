@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../services/supabase_service.dart';
+import 'officer_profile.dart';
 
 class OfficerScreen extends StatefulWidget {
   const OfficerScreen({Key? key}) : super(key: key);
@@ -9,6 +12,21 @@ class OfficerScreen extends StatefulWidget {
 
 class _OfficerScreenState extends State<OfficerScreen> {
   int _selectedIndex = 0;
+  String _userName = 'Officer';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  void _loadUserName() {
+    final user = AuthService.currentUser;
+    if (user != null) {
+      final name = user.userMetadata?['full_name'] ?? 'Officer';
+      setState(() => _userName = name);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +77,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Good morning',
+                    'Good morning,',
                     style: TextStyle(
                       color: Colors.white70,
                       fontSize: 14,
@@ -67,9 +85,9 @@ class _OfficerScreenState extends State<OfficerScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Officer Karim',
-                    style: TextStyle(
+                  Text(
+                    _userName,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -84,10 +102,19 @@ class _OfficerScreenState extends State<OfficerScreen> {
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2),
                 ),
-                child: const Icon(
-                  Icons.person_outline,
-                  color: Colors.white,
-                  size: 24,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.person_outline,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const OfficerProfileScreen(),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
