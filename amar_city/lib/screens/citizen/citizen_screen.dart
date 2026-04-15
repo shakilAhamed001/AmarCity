@@ -70,8 +70,13 @@ class _CitizenScreenState extends State<CitizenScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cardColor = theme.cardColor;
+    final textPrimary = theme.colorScheme.onSurface;
+    final textSecondary = theme.colorScheme.onSurface.withOpacity(0.6);
+    final bgColor = theme.scaffoldBackgroundColor;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: bgColor,
       body: RefreshIndicator(
         onRefresh: _fetchComplaints,
         child: SingleChildScrollView(
@@ -204,19 +209,13 @@ class _CitizenScreenState extends State<CitizenScreen> {
   }
 
   Widget _buildQuickActions() {
+    final textPrimary = Theme.of(context).colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Quick actions',
-            style: TextStyle(
-              color: Color(0xFF1F2937),
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text('Quick actions', style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -269,13 +268,16 @@ class _CitizenScreenState extends State<CitizenScreen> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final cardColor = Theme.of(context).cardColor;
+    final textPrimary = Theme.of(context).colorScheme.onSurface;
+    final textSecondary = Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: cardColor,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -299,14 +301,14 @@ class _CitizenScreenState extends State<CitizenScreen> {
               ),
               const SizedBox(height: 12),
               Text(title,
-                  style: const TextStyle(
-                      color: Color(0xFF1F2937),
+                  style: TextStyle(
+                      color: textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w600)),
               const SizedBox(height: 4),
               Text(subtitle,
-                  style: const TextStyle(
-                      color: Color(0xFF6B7280),
+                  style: TextStyle(
+                      color: textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w400)),
             ],
@@ -357,32 +359,29 @@ class _CitizenScreenState extends State<CitizenScreen> {
   }
 
   Widget _buildComplaintCard(Map<String, dynamic> c) {
+    final theme = Theme.of(context);
+    final cardColor = theme.cardColor;
+    final textPrimary = theme.colorScheme.onSurface;
+    final textSecondary = theme.colorScheme.onSurface.withOpacity(0.6);
     final status = c['status'] ?? 'New';
     final statusColor = _statusColor(status);
     final icon = _categoryIcon(c['category'] ?? 'OTHER');
     final iconColor = _categoryColor(c['category'] ?? 'OTHER');
     final date = _formatDate(c['created_at']);
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))
         ],
       ),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8)),
+            width: 40, height: 40,
+            decoration: BoxDecoration(color: iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
             child: Icon(icon, color: iconColor, size: 20),
           ),
           const SizedBox(width: 12),
@@ -390,37 +389,20 @@ class _CitizenScreenState extends State<CitizenScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(c['title'] ?? '',
-                    style: const TextStyle(
-                        color: Color(0xFF1F2937),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600)),
+                Text(c['title'] ?? '', style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
                 Row(children: [
-                  Text(c['location'] ?? '',
-                      style: const TextStyle(
-                          color: Color(0xFF6B7280), fontSize: 12)),
-                  const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 6),
-                      child: Text('•',
-                          style: TextStyle(color: Color(0xFFD1D5DB)))),
-                  Text(date,
-                      style: const TextStyle(
-                          color: Color(0xFF6B7280), fontSize: 12)),
+                  Text(c['location'] ?? '', style: TextStyle(color: textSecondary, fontSize: 12)),
+                  Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text('•', style: TextStyle(color: textSecondary))),
+                  Text(date, style: TextStyle(color: textSecondary, fontSize: 12)),
                 ]),
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(6)),
-            child: Text(status,
-                style: TextStyle(
-                    color: statusColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600)),
+            decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+            child: Text(status, style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -473,22 +455,20 @@ class _CitizenScreenState extends State<CitizenScreen> {
   }
 
   Widget _buildFilterChip(String label) {
+    final theme = Theme.of(context);
     final isSelected = _selectedComplaintFilter == label;
     return GestureDetector(
       onTap: () => setState(() => _selectedComplaintFilter = label),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF3B82F6) : Colors.white,
-          border: Border.all(
-              color: isSelected
-                  ? const Color(0xFF3B82F6)
-                  : const Color(0xFFE5E7EB)),
+          color: isSelected ? const Color(0xFF3B82F6) : theme.cardColor,
+          border: Border.all(color: isSelected ? const Color(0xFF3B82F6) : theme.dividerColor),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(label,
             style: TextStyle(
-                color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                color: isSelected ? Colors.white : theme.colorScheme.onSurface.withOpacity(0.6),
                 fontSize: 12,
                 fontWeight: FontWeight.w600)),
       ),
@@ -496,34 +476,30 @@ class _CitizenScreenState extends State<CitizenScreen> {
   }
 
   Widget _buildMyComplaintItem(Map<String, dynamic> c) {
+    final theme = Theme.of(context);
+    final cardColor = theme.cardColor;
+    final textPrimary = theme.colorScheme.onSurface;
+    final textSecondary = theme.colorScheme.onSurface.withOpacity(0.6);
+    final textMuted = theme.colorScheme.onSurface.withOpacity(0.4);
     final status = c['status'] ?? 'New';
     final statusColor = _statusColor(status);
     final icon = _categoryIcon(c['category'] ?? 'OTHER');
     final iconColor = _categoryColor(c['category'] ?? 'OTHER');
     final date = _formatDate(c['created_at']);
     final officer = c['assigned_officer_name'] ?? 'Unassigned';
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8)),
+            width: 40, height: 40,
+            decoration: BoxDecoration(color: iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
             child: Icon(icon, color: iconColor, size: 20),
           ),
           const SizedBox(width: 12),
@@ -534,56 +510,27 @@ class _CitizenScreenState extends State<CitizenScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('#${c['complaint_id'] ?? ''}',
-                        style: const TextStyle(
-                            color: Color(0xFF6B7280),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500)),
+                    Text('#${c['complaint_id'] ?? ''}', style: TextStyle(color: textSecondary, fontSize: 11, fontWeight: FontWeight.w500)),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4)),
-                      child: Text(status,
-                          style: TextStyle(
-                              color: statusColor,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600)),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                      child: Text(status, style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.w600)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(c['title'] ?? '',
-                    style: const TextStyle(
-                        color: Color(0xFF1F2937),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600)),
+                Text(c['title'] ?? '', style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
                 Row(children: [
-                  const Icon(Icons.location_on_outlined,
-                      size: 14, color: Color(0xFF6B7280)),
+                  Icon(Icons.location_on_outlined, size: 14, color: textSecondary),
                   const SizedBox(width: 4),
-                  Text(c['location'] ?? '',
-                      style: const TextStyle(
-                          color: Color(0xFF6B7280), fontSize: 12)),
+                  Text(c['location'] ?? '', style: TextStyle(color: textSecondary, fontSize: 12)),
                 ]),
                 const SizedBox(height: 4),
                 Row(children: [
-                  Text(date,
-                      style: const TextStyle(
-                          color: Color(0xFF9CA3AF), fontSize: 11)),
-                  const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 6),
-                      child: Text('•',
-                          style: TextStyle(
-                              color: Color(0xFFD1D5DB), fontSize: 11))),
-                  Expanded(
-                    child: Text('Officer: $officer',
-                        style: const TextStyle(
-                            color: Color(0xFF9CA3AF), fontSize: 11),
-                        overflow: TextOverflow.ellipsis),
-                  ),
+                  Text(date, style: TextStyle(color: textMuted, fontSize: 11)),
+                  Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text('•', style: TextStyle(color: textMuted, fontSize: 11))),
+                  Expanded(child: Text('Officer: $officer', style: TextStyle(color: textMuted, fontSize: 11), overflow: TextOverflow.ellipsis)),
                 ]),
               ],
             ),

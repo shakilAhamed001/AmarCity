@@ -1,21 +1,38 @@
 import 'package:flutter/material.dart';
 import '../../services/supabase_service.dart';
+import '../../services/theme_notifier.dart';
+import 'edit_profile_screen.dart';
+import 'address_screen.dart';
+import 'change_password_screen.dart';
 
-class CitizenProfileScreen extends StatelessWidget {
+class CitizenProfileScreen extends StatefulWidget {
   const CitizenProfileScreen({Key? key}) : super(key: key);
 
-  String get _userName {
+  @override
+  State<CitizenProfileScreen> createState() => _CitizenProfileScreenState();
+}
+
+class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
+  String _userName = '';
+  String _userEmail = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  void _loadUser() {
     final user = AuthService.currentUser;
-    return user?.userMetadata?['full_name'] ?? 'Citizen';
+    setState(() {
+      _userName = user?.userMetadata?['full_name'] ?? 'Citizen';
+      _userEmail = user?.email ?? '';
+    });
   }
 
-  String get _userEmail {
-    return AuthService.currentUser?.email ?? '';
-  }
-
-  Future<void> _logout(BuildContext context) async {
+  Future<void> _logout() async {
     await AuthService.signOut();
-    if (context.mounted) {
+    if (mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
     }
   }
@@ -23,19 +40,18 @@ class CitizenProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F9),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
         centerTitle: true,
-        title: const Text(
-          'Profile',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Profile',
+            style:
+                TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
       ),
       body: Column(
         children: [
@@ -46,30 +62,32 @@ class CitizenProfileScreen extends StatelessWidget {
             child: Text(
               _userName.isNotEmpty ? _userName[0].toUpperCase() : 'C',
               style: const TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
             ),
           ),
           const SizedBox(height: 12),
-          Text(
-            _userName,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            _userEmail,
-            style: const TextStyle(fontSize: 14, color: Colors.grey),
-          ),
+          Text(_userName,
+              style: const TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(_userEmail,
+              style: const TextStyle(fontSize: 14, color: Colors.grey)),
           const SizedBox(height: 12),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () async {
+              final updated = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(
+                    builder: (context) => const EditProfileScreen()),
+              );
+              if (updated == true) _loadUser();
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  borderRadius: BorderRadius.circular(8)),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
             ),
             child: const Text('Edit Profile',
                 style: TextStyle(color: Colors.white)),
@@ -79,13 +97,22 @@ class CitizenProfileScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               children: [
-                _buildOption(context, Icons.settings, 'Settings'),
-                _buildOption(context, Icons.list_alt_outlined, 'My Complaints'),
-                _buildOption(context, Icons.location_on_outlined, 'Address'),
-                _buildOption(context, Icons.lock_outline, 'Change Password'),
-                _buildOption(context, Icons.help_outline, 'Help & Support'),
-                _buildOption(context, Icons.logout, 'Log out',
-                    color: Colors.red, onTap: () => _logout(context)),
+                
+                _buildOption(Icons.list_alt_outlined, 'My Complaints'),
+                _buildOption(Icons.location_on_outlined, 'Address',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (context) => const AddressScreen()),
+                    )),
+                _buildOption(Icons.lock_outline, 'Change Password',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (context) => const ChangePasswordScreen()),
+                    )),
+                _buildDarkModeOption(),
+                _buildOption(Icons.help_outline, 'Help & Support'),
+                _buildOption(Icons.logout, 'Log out',
+                    color: Colors.red, onTap: _logout),
               ],
             ),
           ),
@@ -94,16 +121,37 @@ class CitizenProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOption(BuildContext context, IconData icon, String title,
-      {Color color = Colors.black, VoidCallback? onTap}) {
+  Widget _buildDarkModeOption() {
+    final isDark = ThemeNotifier().isDark;
+    final textColor = Theme.of(context).colorScheme.onSurface;
     return Column(
       children: [
         ListTile(
-          leading: Icon(icon, color: color),
-          title: Text(title,
-              style: TextStyle(color: color, fontWeight: FontWeight.w500)),
-          trailing:
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+          leading: Icon(isDark ? Icons.dark_mode : Icons.light_mode, color: textColor),
+          title: Text('Dark Mode', style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
+          trailing: Switch(
+            value: isDark,
+            activeColor: const Color(0xFF1E40AF),
+            onChanged: (_) {
+              ThemeNotifier().toggle();
+              setState(() {});
+            },
+          ),
+        ),
+        const Divider(height: 1, thickness: 0.5, indent: 16, endIndent: 16),
+      ],
+    );
+  }
+
+  Widget _buildOption(IconData icon, String title,
+      {Color? color, VoidCallback? onTap}) {
+    final textColor = color ?? Theme.of(context).colorScheme.onSurface;
+    return Column(
+      children: [
+        ListTile(
+          leading: Icon(icon, color: textColor),
+          title: Text(title, style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
+          trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
           onTap: onTap,
         ),
         const Divider(height: 1, thickness: 0.5, indent: 16, endIndent: 16),

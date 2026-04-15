@@ -6,6 +6,7 @@ import 'screens/account/create_account.dart';
 import 'screens/officer/officer_screen.dart';
 import 'screens/citizen/citizen_screen.dart';
 import 'services/supabase_service.dart';
+import 'services/theme_notifier.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,18 +17,38 @@ void main() async {
   runApp(const MainApp());
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends StatefulWidget {
   const MainApp({super.key});
+
+  @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  final _themeNotifier = ThemeNotifier();
+
+  @override
+  void initState() {
+    super.initState();
+    _themeNotifier.addListener(() => setState(() {}));
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'AmarCity',
+      debugShowCheckedModeBanner: false,
+      themeMode: _themeNotifier.isDark ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeData(
         useMaterial3: true,
-        primarySwatch: Colors.blue,
+        colorSchemeSeed: const Color(0xFF1E40AF),
+        brightness: Brightness.light,
       ),
-      debugShowCheckedModeBanner: false,
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: const Color(0xFF1E40AF),
+        brightness: Brightness.dark,
+      ),
       home: const SplashScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),
