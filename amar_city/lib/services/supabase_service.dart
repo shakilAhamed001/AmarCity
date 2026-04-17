@@ -12,11 +12,16 @@ class AuthService {
     required String password,
     required String name,
     required String role,
+    String? department,
   }) async {
     final response = await supabase.auth.signUp(
       email: email,
       password: password,
-      data: {'full_name': name, 'role': role},
+      data: {
+        'full_name': name,
+        'role': role,
+        if (department != null) 'department': department,
+      },
     );
     return response;
   }
