@@ -17,7 +17,15 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String _selectedRole = 'Citizen';
+  String? _selectedDepartment;
   bool _isLoading = false;
+
+  static const List<String> _departments = [
+    'Public Health & Sanitation Department',
+    'Trade License Issuance & Registration Department',
+    'Waste Management Department',
+    'Engineering Department',
+  ];
 
   @override
   void initState() {
@@ -53,6 +61,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       );
       return;
     }
+    if (_selectedRole == 'Officer' && _selectedDepartment == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a department')),
+      );
+      return;
+    }
     setState(() => _isLoading = true);
     try {
       final response = await AuthService.signUp(
@@ -60,6 +74,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         password: _passwordController.text,
         name: _nameController.text.trim(),
         role: _selectedRole,
+        department: _selectedDepartment,
       );
       if (response.user != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -192,6 +207,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       ],
                     ),
                     const SizedBox(height: 25),
+                    // Department dropdown — only for Officer
+                    if (_selectedRole == 'Officer') ..._buildDepartmentSection(),
+                    const SizedBox(height: 25),
                     // Create Account Button
                     SizedBox(
                       width: double.infinity,
@@ -258,6 +276,61 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildDepartmentSection() {
+    return [
+      const Text(
+        'DEPARTMENT',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF333333),
+          letterSpacing: 0.5,
+        ),
+      ),
+      const SizedBox(height: 12),
+      ..._departments.map((dept) {
+        final isSelected = _selectedDepartment == dept;
+        return GestureDetector(
+          onTap: () => setState(() => _selectedDepartment = dept),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: isSelected ? const Color(0xFF0066CC) : const Color(0xFFE0E0E0),
+                width: isSelected ? 2 : 1,
+              ),
+              borderRadius: BorderRadius.circular(10),
+              color: isSelected
+                  ? const Color(0xFF0066CC).withOpacity(0.07)
+                  : Colors.transparent,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                  color: isSelected ? const Color(0xFF0066CC) : const Color(0xFF999999),
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    dept,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                      color: isSelected ? const Color(0xFF0066CC) : const Color(0xFF333333),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
+    ];
   }
 
   Widget _buildRoleButton(String role, IconData icon, String subtitle) {
