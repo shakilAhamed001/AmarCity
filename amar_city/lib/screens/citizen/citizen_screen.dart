@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/supabase_service.dart';
 import 'citizen_profile.dart';
+import 'citizen_report.dart';
 
 class CitizenScreen extends StatefulWidget {
   const CitizenScreen({Key? key}) : super(key: key);
@@ -224,7 +225,11 @@ class _CitizenScreenState extends State<CitizenScreen> {
                 iconColor: const Color(0xFF3B82F6),
                 title: 'Report issue',
                 subtitle: 'Submit new complaint',
-                onTap: () {},
+                onTap: () async {
+                  await Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => const CitizenReportScreen()));
+                  _fetchComplaints();
+                },
               ),
               const SizedBox(width: 12),
               _buildQuickActionCard(
@@ -554,6 +559,11 @@ class _CitizenScreenState extends State<CitizenScreen> {
       child: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {
+          if (index == 1) {
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (context) => const CitizenReportScreen())).then((_) => _fetchComplaints());
+            return;
+          }
           if (index == 3) {
             Navigator.of(context).push(MaterialPageRoute(
                 builder: (context) => const CitizenProfileScreen()));
