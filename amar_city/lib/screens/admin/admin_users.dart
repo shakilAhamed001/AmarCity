@@ -104,15 +104,21 @@ class _AdminUsersState extends State<AdminUsers> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Row(
                       children: [
-                        Icon(Icons.signal_cellular_alt,
-                            color: Colors.white, size: 16),
+                        Icon(
+                          Icons.signal_cellular_alt,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                         SizedBox(width: 4),
                         Text(
                           '100%',
@@ -133,8 +139,11 @@ class _AdminUsersState extends State<AdminUsers> {
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.notifications_none,
-                        color: Colors.white, size: 18),
+                    child: const Icon(
+                      Icons.notifications_none,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ],
               ),
@@ -265,9 +274,9 @@ class _AdminUsersState extends State<AdminUsers> {
       children: filteredUsers.map((user) {
         return GestureDetector(
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Viewing ${user['name']}')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Viewing ${user['name']}')));
           },
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -347,8 +356,9 @@ class _AdminUsersState extends State<AdminUsers> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: (user['statusColor'] as Color)
-                                  .withOpacity(0.15),
+                              color: (user['statusColor'] as Color).withOpacity(
+                                0.15,
+                              ),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
