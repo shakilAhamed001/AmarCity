@@ -15,6 +15,10 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   String _selectedRole = 'Citizen';
 
+  // Admin credentials
+  static const String _adminEmail = 'admin@amarcity.com';
+  static const String _adminPassword = 'Admin@1234';
+
   @override
   void initState() {
     super.initState();
@@ -39,11 +43,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleSignIn() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
       return;
     }
+
+    // Admin local login
+    if (_selectedRole == 'Admin') {
+      if (_emailController.text.trim() == _adminEmail &&
+          _passwordController.text == _adminPassword) {
+        Navigator.of(context).pushReplacementNamed('/admin');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid admin credentials.')),
+        );
+      }
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       final response = await AuthService.signIn(
@@ -65,9 +83,9 @@ class _LoginScreenState extends State<LoginScreen> {
         } else if (message.contains('invalid_credentials')) {
           message = 'Invalid email or password.';
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -104,10 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       height: 70,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white24,
-                          width: 1.5,
-                        ),
+                        border: Border.all(color: Colors.white24, width: 1.5),
                       ),
                       child: Container(
                         margin: const EdgeInsets.all(8),
@@ -319,6 +334,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             const SizedBox(width: 10),
                             _buildRoleButton('Officer', Icons.work),
                             const SizedBox(width: 10),
+                            _buildRoleButton('Admin', Icons.shield),
                           ],
                         ),
                         const SizedBox(height: 25),
@@ -345,14 +361,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   )
                                 : const Text(
-                              'Sign in securely',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
+                                    'Sign in securely',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -407,8 +423,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                 ),
                               ),
                             ),
@@ -433,8 +450,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                 ),
                               ),
                             ),
@@ -460,7 +478,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   recognizer: TapGestureRecognizer()
                                     ..onTap = () {
-                                      Navigator.of(context).pushNamed('/create_account');
+                                      Navigator.of(
+                                        context,
+                                      ).pushNamed('/create_account');
                                     },
                                 ),
                                 const TextSpan(
@@ -481,7 +501,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 40),
-            ],    
+            ],
           ),
         ),
       ),
