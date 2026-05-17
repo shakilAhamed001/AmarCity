@@ -1,9 +1,12 @@
+// Flutter material design import
 import 'package:flutter/material.dart';
+// Admin panel এর সব tab screen import
 import 'admin_overview.dart';
 import 'admin_users.dart';
 import 'admin_complain.dart';
 import 'admin_profile.dart';
 
+// AdminDashboard — Admin এর main screen, bottom navigation সহ
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
 
@@ -12,28 +15,34 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
+  // বর্তমানে কোন tab selected আছে তা track করে — শুরুতে 0 (Overview)
   int _selectedTab = 0;
 
+  // ৪টি tab এর screen list — index দিয়ে access করা হয়
   final List<Widget> _tabs = [
-    const AdminOverview(),
-    const AdminUsers(),
-    const AdminComplaints(),
-    const AdminProfile(),
+    const AdminOverview(),   // index 0 — Dashboard overview
+    const AdminUsers(),      // index 1 — User management
+    const AdminComplaints(), // index 2 — Complaints list
+    const AdminProfile(),    // index 3 — Admin profile
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
+      // _selectedTab অনুযায়ী সঠিক screen দেখানো হচ্ছে
       body: _tabs[_selectedTab],
+      // নিচের navigation bar
       bottomNavigationBar: _buildBottomNavigation(),
     );
   }
 
+  // Bottom navigation bar widget
   Widget _buildBottomNavigation() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
+        // উপরে হালকা shadow
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
@@ -75,13 +84,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  // একটি navigation item widget — icon, label ও index নিয়ে তৈরি
   Widget _buildNavItem({
     required IconData icon,
     required String label,
     required int index,
   }) {
+    // এই item টি selected কিনা check করা হচ্ছে
     bool isSelected = _selectedTab == index;
     return GestureDetector(
+      // tap করলে selected tab পরিবর্তন হবে
       onTap: () {
         setState(() {
           _selectedTab = index;
@@ -92,6 +104,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         children: [
           Icon(
             icon,
+            // selected হলে বেগুনি, না হলে ধূসর
             color: isSelected
                 ? const Color(0xFF7C3AED)
                 : const Color(0xFF9CA3AF),

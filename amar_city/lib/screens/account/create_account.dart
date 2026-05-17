@@ -1,7 +1,11 @@
+// Flutter material design import
 import 'package:flutter/material.dart';
+// RichText এ tap handle করার জন্য
 import 'package:flutter/gestures.dart';
+// Auth service — account তৈরি করার জন্য
 import '../../services/supabase_service.dart';
 
+// CreateAccountScreen — নতুন account তৈরির screen
 class CreateAccountScreen extends StatefulWidget {
   const CreateAccountScreen({super.key});
 
@@ -10,16 +14,22 @@ class CreateAccountScreen extends StatefulWidget {
 }
 
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
+  // সব input field এর controller
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
   late TextEditingController _confirmPasswordController;
+  // Password visibility toggle
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  // বর্তমানে কোন role selected — শুরুতে Citizen
   String _selectedRole = 'Citizen';
+  // Officer এর জন্য selected department
   String? _selectedDepartment;
+  // Form submit loading state
   bool _isLoading = false;
 
+  // Officer এর জন্য available department list
   static const List<String> _departments = [
     'Public Health & Sanitation Department',
     'Trade License Issuance & Registration Department',
@@ -30,6 +40,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   @override
   void initState() {
     super.initState();
+    // Controller initialize করা হচ্ছে
     _nameController = TextEditingController();
     _emailController = TextEditingController();
     _passwordController = TextEditingController();
@@ -38,6 +49,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   @override
   void dispose() {
+    // Memory leak এড়াতে সব controller dispose করা হচ্ছে
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -45,7 +57,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     super.dispose();
   }
 
+  // Create account button press করলে এই function call হয়
   void _handleCreateAccount() async {
+    // সব field পূরণ হয়েছে কিনা check
     if (_nameController.text.isEmpty ||
         _emailController.text.isEmpty ||
         _passwordController.text.isEmpty ||
@@ -55,12 +69,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       );
       return;
     }
+    // Password match check
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Passwords do not match')),
       );
       return;
     }
+    // Officer হলে department select করা বাধ্যতামূলক
     if (_selectedRole == 'Officer' && _selectedDepartment == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a department')),
@@ -69,6 +85,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     }
     setState(() => _isLoading = true);
     try {
+      // Supabase এ নতুন user তৈরি করা হচ্ছে
       final response = await AuthService.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
@@ -77,9 +94,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         department: _selectedDepartment,
       );
       if (response.user != null && mounted) {
+        // Email verification এর জন্য বলা হচ্ছে
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Account created! Please check your email to verify.')),
         );
+        // Login screen এ navigate করা হচ্ছে
         Navigator.of(context).pushReplacementNamed('/login');
       }
     } catch (e) {
@@ -104,6 +123,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
+        // Blue gradient background
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -128,6 +148,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Form title
                     const Text(
                       'Create your account',
                       style: TextStyle(
@@ -145,7 +166,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       ),
                     ),
                     const SizedBox(height: 25),
-                    // Full Name Field
+                    // Full name field
                     _buildTextField(
                       label: 'FULL NAME',
                       hint: 'Rahim Ahmed',
@@ -153,7 +174,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       controller: _nameController,
                     ),
                     const SizedBox(height: 20),
-                    // Email Field
+                    // Email field
                     _buildTextField(
                       label: 'EMAIL ADDRESS',
                       hint: 'rahim@example.com',
@@ -162,7 +183,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 20),
-                    // Password Field
+                    // Password field
                     _buildPasswordField(
                       label: 'PASSWORD',
                       hint: 'Enter your password',
@@ -175,7 +196,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       },
                     ),
                     const SizedBox(height: 20),
-                    // Confirm Password Field
+                    // Confirm password field
                     _buildPasswordField(
                       label: 'CONFIRM PASSWORD',
                       hint: 'Re-enter your password',
@@ -188,7 +209,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       },
                     ),
                     const SizedBox(height: 20),
-                    // Account Type Section
+                    // Account type selection
                     const Text(
                       'ACCOUNT TYPE',
                       style: TextStyle(
@@ -199,6 +220,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    // Citizen ও Officer role button
                     Row(
                       children: [
                         _buildRoleButton('Citizen', Icons.person, 'General public user'),
@@ -207,10 +229,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       ],
                     ),
                     const SizedBox(height: 25),
-                    // Department dropdown — only for Officer
+                    // Officer select করলে department section দেখাবে
                     if (_selectedRole == 'Officer') ..._buildDepartmentSection(),
                     const SizedBox(height: 25),
-                    // Create Account Button
+                    // Create account button
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -222,6 +244,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
+                        // Loading হলে spinner, না হলে text
                         child: _isLoading
                             ? const SizedBox(
                                 width: 22,
@@ -242,7 +265,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    // Sign In Link
+                    // Sign in link — already have account
                     Center(
                       child: RichText(
                         text: TextSpan(
@@ -259,6 +282,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                 color: Color(0xFF0066CC),
                                 fontWeight: FontWeight.w600,
                               ),
+                              // tap করলে login screen এ ফিরে যাবে
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () {
                                   Navigator.of(context).pop();
@@ -278,6 +302,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     );
   }
 
+  // Department selection section — শুধু Officer এর জন্য
   List<Widget> _buildDepartmentSection() {
     return [
       const Text(
@@ -290,9 +315,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         ),
       ),
       const SizedBox(height: 12),
+      // প্রতিটি department radio button হিসেবে দেখানো হচ্ছে
       ..._departments.map((dept) {
         final isSelected = _selectedDepartment == dept;
         return GestureDetector(
+          // tap করলে department select হবে
           onTap: () => setState(() => _selectedDepartment = dept),
           child: Container(
             margin: const EdgeInsets.only(bottom: 10),
@@ -309,12 +336,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             ),
             child: Row(
               children: [
+                // Radio button icon
                 Icon(
                   isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
                   color: isSelected ? const Color(0xFF0066CC) : const Color(0xFF999999),
                   size: 20,
                 ),
                 const SizedBox(width: 12),
+                // Department name
                 Expanded(
                   child: Text(
                     dept,
@@ -333,6 +362,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     ];
   }
 
+  // Role selection button — Citizen বা Officer
   Widget _buildRoleButton(String role, IconData icon, String subtitle) {
     final bool isSelected = _selectedRole == role;
     return Expanded(
@@ -367,6 +397,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 ),
               ),
               const SizedBox(height: 3),
+              // Role description
               Text(
                 subtitle,
                 style: const TextStyle(
@@ -382,6 +413,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     );
   }
 
+  // Reusable text field widget
   Widget _buildTextField({
     required String label,
     required String hint,
@@ -439,6 +471,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     );
   }
 
+  // Reusable password field widget — visibility toggle সহ
   Widget _buildPasswordField({
     required String label,
     required String hint,
@@ -461,6 +494,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         const SizedBox(height: 10),
         TextField(
           controller: controller,
+          // obscure true হলে password লুকানো থাকবে
           obscureText: obscure,
           decoration: InputDecoration(
             hintText: hint,
@@ -473,6 +507,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               color: Color(0xFF0066CC),
               size: 20,
             ),
+            // Eye icon — visibility toggle
             suffixIcon: IconButton(
               icon: Icon(
                 obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
@@ -504,5 +539,3 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     );
   }
 }
-
-

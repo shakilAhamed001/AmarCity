@@ -1,5 +1,9 @@
+// Flutter material design import
 import 'package:flutter/material.dart';
+// Supabase client ব্যবহারের জন্য
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+// AdminComplaints — Admin এর complaint management screen
 class AdminComplaints extends StatefulWidget {
   const AdminComplaints({Key? key}) : super(key: key);
 
@@ -8,9 +12,14 @@ class AdminComplaints extends StatefulWidget {
 }
 
 class _AdminComplaintsState extends State<AdminComplaints> {
+  // বর্তমানে কোন filter selected — শুরুতে 'All (52)'
   String _selectedFilter = 'All (52)';
+  // Search field এ কী লেখা আছে
   String _searchQuery = '';
+  // Database থেকে আনা officer list — assign dialog এ দেখানো হবে
+  List<Map<String, dynamic>> _allOfficers = [];
 
+  // Static complaint data — পরে database থেকে আনা যাবে
   final List<Map<String, dynamic>> _allComplaints = [
     {
       'id': 'EAC-3891',
@@ -67,20 +76,118 @@ class _AdminComplaintsState extends State<AdminComplaints> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // Screen load হলে officer list fetch করা হচ্ছে
+    _fetchOfficers();
+  }
+
+  // Supabase থেকে সব officer fetch করার function
+  Future<void> _fetchOfficers() async {
+    try {
+      final supabase = Supabase.instance.client;
+      // profiles table থেকে শুধু Officer role এর user আনা হচ্ছে
+      final data = await supabase
+          .from('profiles')
+          .select()
+          .eq('role', 'officer');
+      setState(() {
+        _allOfficers = List<Map<String, dynamic>>.from(data);
+      });
+    } catch (e) {
+      debugPrint('Error fetching officers: $e');
+    }
+  }
+
+  // Complaint এ officer assign করার dialog দেখানোর function
+  Future<void> _assignOfficerDialog(Map<String, dynamic> complaint) async {
+    String? selectedOfficerId;
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Assign Officer'),
+          content: SizedBox(
+            width: 300,
+            // Officer list থেকে dropdown এ select করা যাবে
+            child: DropdownButtonFormField<String>(
+              isExpanded: true,
+              value: selectedOfficerId,
+              items: _allOfficers.map((officer) {
+                return DropdownMenuItem<String>(
+                  value: officer['id'],
+                  child: Text(
+                    // full_name না থাকলে email দেখাবে
+                    officer['full_name'] ?? officer['email'] ?? 'Officer',
+                  ),
+                );
+              }).toList(),
+              onChanged: (val) {
+                selectedOfficerId = val;
+              },
+              decoration: const InputDecoration(labelText: 'Select Officer'),
+            ),
+          ),
+          actions: [
+            // Cancel button — dialog বন্ধ করবে
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            // Assign button — database update করবে
+            ElevatedButton(
+              onPressed: () async {
+                if (selectedOfficerId != null) {
+                  try {
+                    final supabase = Supabase.instance.client;
+                    // complaints table এ assigned_officer_id update করা হচ্ছে
+                    await supabase
+                        .from('complaints')
+                        .update({'assigned_officer_id': selectedOfficerId})
+                        .eq('id', complaint['id']);
+                    setState(() {
+                      complaint['assigned_officer_id'] = selectedOfficerId;
+                    });
+                    if (mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Officer assigned successfully!'),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    debugPrint('Error assigning officer: $e');
+                  }
+                }
+              },
+              child: const Text('Assign'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: Column(
         children: [
+          // উপরের gradient header
           _buildHeader(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Filter chips — All, Unassigned, New, In progress
                 _buildFilters(),
                 const SizedBox(height: 20),
+                // Search field
                 _buildSearchField(),
                 const SizedBox(height: 20),
+                // Complaint card list
                 _buildComplaintsList(),
                 const SizedBox(height: 40),
               ],
@@ -91,6 +198,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     );
   }
 
+  // Header widget — gradient background সহ
   Widget _buildHeader() {
     return Container(
       decoration: const BoxDecoration(
@@ -113,37 +221,9 @@ class _AdminComplaintsState extends State<AdminComplaints> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const SizedBox(),
+              // Notification icon
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.signal_cellular_alt,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          '100%',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Container(
                     width: 32,
                     height: 32,
@@ -162,6 +242,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
             ],
           ),
           const SizedBox(height: 24),
+          // সময় দেখানো হচ্ছে
           const Text(
             '8:50',
             style: TextStyle(
@@ -171,6 +252,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
             ),
           ),
           const SizedBox(height: 8),
+          // Page title
           const Text(
             'Complaints',
             style: TextStyle(
@@ -194,6 +276,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     );
   }
 
+  // Filter chips — horizontally scrollable
   Widget _buildFilters() {
     final filters = ['All (52)', 'Unassigned (4)', 'New', 'In progress'];
 
@@ -205,6 +288,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
         itemBuilder: (context, index) {
           bool isSelected = _selectedFilter == filters[index];
           return GestureDetector(
+            // tap করলে filter পরিবর্তন হবে
             onTap: () {
               setState(() {
                 _selectedFilter = filters[index];
@@ -214,6 +298,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
+                // selected হলে বেগুনি background
                 color: isSelected ? const Color(0xFF7C3AED) : Colors.white,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
@@ -237,6 +322,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     );
   }
 
+  // Search field widget
   Widget _buildSearchField() {
     return Container(
       decoration: BoxDecoration(
@@ -245,6 +331,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
         border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: TextField(
+        // টাইপ করলে search query update হবে
         onChanged: (value) {
           setState(() {
             _searchQuery = value;
@@ -269,7 +356,9 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     );
   }
 
+  // Complaint list — search query দিয়ে filter করা হচ্ছে
   Widget _buildComplaintsList() {
+    // title বা location এ search query আছে কিনা check করে filter
     List<Map<String, dynamic>> filteredComplaints = _allComplaints.where((
       complaint,
     ) {
@@ -283,6 +372,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
       children: filteredComplaints.map((complaint) {
         return GestureDetector(
           onTap: () {
+            // complaint tap করলে ID দেখানো হচ্ছে
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Viewing ${complaint['id']}')),
             );
@@ -299,6 +389,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
               children: [
                 Row(
                   children: [
+                    // Category icon
                     Container(
                       width: 44,
                       height: 44,
@@ -322,6 +413,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
+                              // Complaint ID
                               Expanded(
                                 child: Text(
                                   complaint['id'],
@@ -333,6 +425,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                                   ),
                                 ),
                               ),
+                              // Status badge
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
@@ -355,6 +448,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                             ],
                           ),
                           const SizedBox(height: 6),
+                          // Complaint title
                           Text(
                             complaint['title'],
                             style: const TextStyle(
@@ -378,6 +472,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Location
                           Text(
                             complaint['location'],
                             style: const TextStyle(
@@ -387,6 +482,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                             ),
                           ),
                           const SizedBox(height: 4),
+                          // Reporter name
                           Text(
                             'Reporter: ${complaint['reporter']}',
                             style: const TextStyle(
@@ -404,6 +500,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                 Row(
                   children: [
                     const SizedBox(width: 56),
+                    // Priority badge
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -424,6 +521,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                       ),
                     ),
                     const SizedBox(width: 8),
+                    // কতক্ষণ আগে submit হয়েছে
                     Text(
                       complaint['timeAgo'],
                       style: const TextStyle(
@@ -433,21 +531,25 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                       ),
                     ),
                     const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEDE9FE),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'Assign officer >',
-                        style: TextStyle(
-                          color: Color(0xFF7C3AED),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                    // Officer assign করার button
+                    GestureDetector(
+                      onTap: () => _assignOfficerDialog(complaint),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEDE9FE),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'Assign officer >',
+                          style: TextStyle(
+                            color: Color(0xFF7C3AED),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),

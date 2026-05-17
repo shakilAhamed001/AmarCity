@@ -1,5 +1,7 @@
+// Flutter material design import
 import 'package:flutter/material.dart';
 
+// AdminProfile — Admin এর profile ও settings screen
 class AdminProfile extends StatefulWidget {
   const AdminProfile({Key? key}) : super(key: key);
 
@@ -13,16 +15,20 @@ class _AdminProfileState extends State<AdminProfile> {
     return SingleChildScrollView(
       child: Column(
         children: [
+          // উপরের gradient header
           _buildHeader(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Admin এর avatar, নাম, email
                 _buildAdminInfo(),
                 const SizedBox(height: 32),
+                // Complaints, Users, Resolution rate stats
                 _buildStatsSection(),
                 const SizedBox(height: 32),
+                // Settings options list
                 _buildSettingsSection(),
                 const SizedBox(height: 40),
               ],
@@ -33,6 +39,7 @@ class _AdminProfileState extends State<AdminProfile> {
     );
   }
 
+  // Header widget
   Widget _buildHeader() {
     return Container(
       decoration: const BoxDecoration(
@@ -55,37 +62,9 @@ class _AdminProfileState extends State<AdminProfile> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const SizedBox(),
+              // Notification icon
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.signal_cellular_alt,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          '100%',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Container(
                     width: 32,
                     height: 32,
@@ -118,9 +97,11 @@ class _AdminProfileState extends State<AdminProfile> {
     );
   }
 
+  // Admin এর profile info — avatar, নাম, email, organization
   Widget _buildAdminInfo() {
     return Column(
       children: [
+        // Shield icon দিয়ে admin avatar
         Container(
           width: 100,
           height: 100,
@@ -131,6 +112,7 @@ class _AdminProfileState extends State<AdminProfile> {
           child: const Icon(Icons.shield, color: Color(0xFF7C3AED), size: 50),
         ),
         const SizedBox(height: 24),
+        // Admin এর title
         const Text(
           'City Administrator',
           style: TextStyle(
@@ -140,6 +122,7 @@ class _AdminProfileState extends State<AdminProfile> {
           ),
         ),
         const SizedBox(height: 8),
+        // Admin email
         const Text(
           'admin@dhakacity.gov.bd',
           style: TextStyle(
@@ -149,6 +132,7 @@ class _AdminProfileState extends State<AdminProfile> {
           ),
         ),
         const SizedBox(height: 12),
+        // Organization badge
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
@@ -169,6 +153,7 @@ class _AdminProfileState extends State<AdminProfile> {
     );
   }
 
+  // Stats section — Complaints, Users, Resolution rate
   Widget _buildStatsSection() {
     return Container(
       decoration: BoxDecoration(
@@ -183,6 +168,7 @@ class _AdminProfileState extends State<AdminProfile> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildStatItem('248', 'Complaints', const Color(0xFF7C3AED)),
+              // Vertical divider
               _buildDivider(),
               _buildStatItem('168', 'Users', const Color(0xFF10B981)),
               _buildDivider(),
@@ -194,6 +180,7 @@ class _AdminProfileState extends State<AdminProfile> {
     );
   }
 
+  // একটি stat item — value, label, color নিয়ে তৈরি
   Widget _buildStatItem(String value, String label, Color color) {
     return Expanded(
       child: Column(
@@ -220,6 +207,7 @@ class _AdminProfileState extends State<AdminProfile> {
     );
   }
 
+  // Stats এর মাঝে vertical divider
   Widget _buildDivider() {
     return Container(
       width: 1,
@@ -229,7 +217,9 @@ class _AdminProfileState extends State<AdminProfile> {
     );
   }
 
+  // Settings section — City settings, Export reports, Escalation rules
   Widget _buildSettingsSection() {
+    // Settings option গুলোর data list
     final settings = [
       {
         'icon': Icons.location_city,
@@ -254,6 +244,7 @@ class _AdminProfileState extends State<AdminProfile> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Section title
         const Text(
           'SETTINGS',
           style: TextStyle(
@@ -264,10 +255,12 @@ class _AdminProfileState extends State<AdminProfile> {
           ),
         ),
         const SizedBox(height: 16),
+        // প্রতিটি setting option card হিসেবে দেখানো হচ্ছে
         Column(
           children: settings.map((setting) {
             return GestureDetector(
               onTap: () {
+                // tap করলে title দেখানো হচ্ছে — পরে navigate করা যাবে
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text(setting['title'] as String)),
                 );
@@ -282,6 +275,7 @@ class _AdminProfileState extends State<AdminProfile> {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
+                    // Setting icon
                     Container(
                       width: 44,
                       height: 44,
@@ -300,6 +294,7 @@ class _AdminProfileState extends State<AdminProfile> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Setting title
                           Text(
                             setting['title'] as String,
                             style: const TextStyle(
@@ -309,6 +304,7 @@ class _AdminProfileState extends State<AdminProfile> {
                             ),
                           ),
                           const SizedBox(height: 4),
+                          // Setting description
                           Text(
                             setting['subtitle'] as String,
                             style: const TextStyle(
@@ -320,6 +316,7 @@ class _AdminProfileState extends State<AdminProfile> {
                         ],
                       ),
                     ),
+                    // Arrow icon
                     const Icon(
                       Icons.chevron_right,
                       color: Color(0xFFD1D5DB),
@@ -332,17 +329,20 @@ class _AdminProfileState extends State<AdminProfile> {
           }).toList(),
         ),
         const SizedBox(height: 24),
+        // Sign out button
         _buildSignOutButton(),
       ],
     );
   }
 
+  // Sign out button widget
   Widget _buildSignOutButton() {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: OutlinedButton(
         onPressed: () {
+          // Sign out confirmation dialog দেখানো হচ্ছে
           _showSignOutDialog();
         },
         style: OutlinedButton.styleFrom(
@@ -363,6 +363,7 @@ class _AdminProfileState extends State<AdminProfile> {
     );
   }
 
+  // Sign out confirmation dialog
   void _showSignOutDialog() {
     showDialog(
       context: context,
@@ -370,10 +371,12 @@ class _AdminProfileState extends State<AdminProfile> {
         title: const Text('Sign out?'),
         content: const Text('Are you sure you want to sign out?'),
         actions: [
+          // Cancel — dialog বন্ধ করবে
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
+          // Sign out — login page এ নিয়ে যাবে, সব route clear করে
           TextButton(
             onPressed: () {
               Navigator.pop(context);

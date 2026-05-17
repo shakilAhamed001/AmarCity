@@ -1,10 +1,17 @@
+// Flutter material design import
 import 'package:flutter/material.dart';
+// Auth service — current user info এর জন্য
 import '../../services/supabase_service.dart';
+// Theme toggle এর জন্য
 import '../../services/theme_notifier.dart';
+// Profile edit screen
 import 'edit_profile_screen.dart';
+// Address screen
 import 'address_screen.dart';
+// Password change screen
 import 'change_password_screen.dart';
 
+// CitizenProfileScreen — Citizen এর profile page
 class CitizenProfileScreen extends StatefulWidget {
   const CitizenProfileScreen({Key? key}) : super(key: key);
 
@@ -13,15 +20,18 @@ class CitizenProfileScreen extends StatefulWidget {
 }
 
 class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
+  // User এর নাম ও email
   String _userName = '';
   String _userEmail = '';
 
   @override
   void initState() {
     super.initState();
+    // User info load করা হচ্ছে
     _loadUser();
   }
 
+  // Supabase auth থেকে current user এর info load করার function
   void _loadUser() {
     final user = AuthService.currentUser;
     setState(() {
@@ -30,9 +40,11 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
     });
   }
 
+  // Logout করার function
   Future<void> _logout() async {
     await AuthService.signOut();
     if (mounted) {
+      // সব route clear করে login screen এ যাচ্ছে
       Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
     }
   }
@@ -56,6 +68,7 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
       body: Column(
         children: [
           const SizedBox(height: 16),
+          // Circle avatar — নামের প্রথম অক্ষর দিয়ে
           CircleAvatar(
             radius: 44,
             backgroundColor: const Color(0xFF1E40AF),
@@ -68,14 +81,18 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
             ),
           ),
           const SizedBox(height: 12),
+          // User এর নাম
           Text(_userName,
               style: const TextStyle(
                   fontSize: 20, fontWeight: FontWeight.bold)),
+          // User এর email
           Text(_userEmail,
               style: const TextStyle(fontSize: 14, color: Colors.grey)),
           const SizedBox(height: 12),
+          // Edit profile button
           ElevatedButton(
             onPressed: () async {
+              // Edit screen থেকে ফিরে আসলে user info reload হবে
               final updated = await Navigator.of(context).push<bool>(
                 MaterialPageRoute(
                     builder: (context) => const EditProfileScreen()),
@@ -93,24 +110,28 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
                 style: TextStyle(color: Colors.white)),
           ),
           const SizedBox(height: 24),
+          // Profile options list
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               children: [
-                
                 _buildOption(Icons.list_alt_outlined, 'My Complaints'),
+                // Address option — tap করলে address screen এ যাবে
                 _buildOption(Icons.location_on_outlined, 'Address',
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
                           builder: (context) => const AddressScreen()),
                     )),
+                // Change password option
                 _buildOption(Icons.lock_outline, 'Change Password',
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
                           builder: (context) => const ChangePasswordScreen()),
                     )),
+                // Dark mode toggle
                 _buildDarkModeOption(),
                 _buildOption(Icons.help_outline, 'Help & Support'),
+                // Logout option — লাল রঙে
                 _buildOption(Icons.logout, 'Log out',
                     color: Colors.red, onTap: _logout),
               ],
@@ -121,6 +142,7 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
     );
   }
 
+  // Dark mode toggle option widget
   Widget _buildDarkModeOption() {
     final isDark = ThemeNotifier().isDark;
     final textColor = Theme.of(context).colorScheme.onSurface;
@@ -129,6 +151,7 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
         ListTile(
           leading: Icon(isDark ? Icons.dark_mode : Icons.light_mode, color: textColor),
           title: Text('Dark Mode', style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
+          // Switch toggle — tap করলে theme পরিবর্তন হবে
           trailing: Switch(
             value: isDark,
             activeColor: const Color(0xFF1E40AF),
@@ -143,8 +166,10 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
     );
   }
 
+  // একটি profile option item widget
   Widget _buildOption(IconData icon, String title,
       {Color? color, VoidCallback? onTap}) {
+    // color দেওয়া না হলে default text color ব্যবহার হবে
     final textColor = color ?? Theme.of(context).colorScheme.onSurface;
     return Column(
       children: [

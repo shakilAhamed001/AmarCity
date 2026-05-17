@@ -1,5 +1,11 @@
+// Flutter material design import
 import 'package:flutter/material.dart';
+// Supabase database connection এর জন্য
+import '../../services/supabase_service.dart';
+// User detail screen এ navigate করার জন্য
+import 'admin_user_detail_screen.dart';
 
+// AdminUsers — Admin এর user management screen
 class AdminUsers extends StatefulWidget {
   const AdminUsers({Key? key}) : super(key: key);
 
@@ -8,77 +14,102 @@ class AdminUsers extends StatefulWidget {
 }
 
 class _AdminUsersState extends State<AdminUsers> {
-  String _selectedFilter = 'All (70)';
+  // বর্তমানে কোন role filter selected — শুরুতে 'All'
+  String _selectedFilter = 'All';
+  // Search field এ কী লেখা আছে
   String _searchQuery = '';
+  // Database থেকে আনা সব user এর list
+  List<Map<String, dynamic>> _allUsers = [];
+  // Data load হচ্ছে কিনা
+  bool _isLoading = true;
 
-  final List<Map<String, dynamic>> _allUsers = [
-    {
-      'initials': 'RA',
-      'name': 'Rahim Ahmed',
-      'email': 'rahim@example.com',
-      'type': 'Citizen',
-      'status': 'Active',
-      'statusColor': const Color(0xFF10B981),
-    },
-    {
-      'initials': 'FI',
-      'name': 'Fatima Islam',
-      'email': 'fatima@example.com',
-      'type': 'Citizen',
-      'status': 'Active',
-      'statusColor': const Color(0xFF10B981),
-    },
-    {
-      'initials': 'SH',
-      'name': 'Sabbir Hasan',
-      'email': 'sabbir@example.com',
-      'type': 'Citizen',
-      'status': 'Active',
-      'statusColor': const Color(0xFF10B981),
-    },
-    {
-      'initials': 'RK',
-      'name': 'Runa Khanam',
-      'email': 'runa@example.com',
-      'type': 'Citizen',
-      'status': 'Suspended',
-      'statusColor': const Color(0xFFEF4444),
-    },
-    {
-      'initials': 'TH',
-      'name': 'Tanvir Hossain',
-      'email': 'tanvir@example.com',
-      'type': 'Citizen',
-      'status': 'Active',
-      'statusColor': const Color(0xFF10B981),
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Screen load হলে user list fetch করা হচ্ছে
+    _fetchUsers();
+  }
+
+  // Supabase profiles table থেকে সব user fetch করার function
+  Future<void> _fetchUsers() async {
+    setState(() => _isLoading = true);
+    try {
+      // সব user আনা হচ্ছে, সবচেয়ে নতুন আগে দেখাবে
+      final data = await supabase
+          .from('profiles')
+          .select()
+          .order('created_at', ascending: false);
+      setState(() {
+        _allUsers = List<Map<String, dynamic>>.from(data);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // Search ও role filter apply করে filtered list return করে
+  List<Map<String, dynamic>> get _filteredUsers {
+    return _allUsers.where((u) {
+      final name = (u['full_name'] ?? '').toString().toLowerCase();
+      final email = (u['email'] ?? '').toString().toLowerCase();
+      final role = (u['role'] ?? '').toString();
+      final query = _searchQuery.toLowerCase();
+      // নাম বা email এ search query আছে কিনা
+      final matchesSearch = name.contains(query) || email.contains(query);
+      // 'All' selected হলে সব দেখাবে, না হলে role match করতে হবে
+      final matchesFilter = _selectedFilter == 'All' ||
+          role.toLowerCase() == _selectedFilter.toLowerCase();
+      return matchesSearch && matchesFilter;
+    }).toList();
+  }
+
+  // নির্দিষ্ট role এর user সংখ্যা count করার helper function
+  int _countByRole(String role) =>
+      _allUsers.where((u) => (u['role'] ?? '') == role).length;
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          _buildHeader(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildFilters(),
-                const SizedBox(height: 20),
-                _buildSearchField(),
-                const SizedBox(height: 20),
-                _buildUserList(),
-                const SizedBox(height: 40),
-              ],
+    return Column(
+      children: [
+        // উপরের header — total count ও role stats সহ
+        _buildHeader(),
+        Expanded(
+          child: RefreshIndicator(
+            // নিচে টেনে refresh করলে আবার data fetch হবে
+            onRefresh: _fetchUsers,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              child: Column(
+                children: [
+                  // Role filter chips
+                  _buildFilters(),
+                  const SizedBox(height: 16),
+                  // Search field
+                  _buildSearchField(),
+                  const SizedBox(height: 16),
+                  // Loading হলে spinner, না হলে user list বা empty message
+                  _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _filteredUsers.isEmpty
+                          ? const Padding(
+                              padding: EdgeInsets.all(32),
+                              child: Text('No users found.',
+                                  style: TextStyle(color: Color(0xFF6B7280))),
+                            )
+                          : _buildUserList(),
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
+  // Header widget — gradient background, total count ও role stats
   Widget _buildHeader() {
     return Container(
       decoration: const BoxDecoration(
@@ -92,122 +123,78 @@ class _AdminUsersState extends State<AdminUsers> {
           bottomRight: Radius.circular(24),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.fromLTRB(20, 48, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
+          const Text('User Management',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          // মোট user সংখ্যা dynamically দেখানো হচ্ছে
+          Text('${_allUsers.length} total users',
+              style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const SizedBox(),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.signal_cellular_alt,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          '100%',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.notifications_none,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                ],
-              ),
+              // Citizen count badge
+              _headerStat('${_countByRole('Citizen')}', 'Citizens',
+                  const Color(0xFF10B981)),
+              const SizedBox(width: 12),
+              // Officer count badge
+              _headerStat('${_countByRole('Officer')}', 'Officers',
+                  const Color(0xFF3B82F6)),
             ],
           ),
-          const SizedBox(height: 24),
-          const Text(
-            '8:50',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'User management',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Customers, Officers & Admins',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  Widget _buildFilters() {
-    final filters = [
-      'All (70)',
-      'Citizens (156)',
-      'Officers (12)',
-      'Admins (2)',
-    ];
+  // Header এর stat badge widget
+  Widget _headerStat(String count, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Row(
+        children: [
+          Text(count,
+              style: TextStyle(
+                  color: color,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(width: 8),
+          Text(label,
+              style: const TextStyle(color: Colors.white70, fontSize: 12)),
+        ],
+      ),
+    );
+  }
 
-    return SizedBox(
-      height: 36,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: filters.length,
-        itemBuilder: (context, index) {
-          bool isSelected = _selectedFilter == filters[index];
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedFilter = filters[index];
-              });
-            },
+  // Role filter chips — All, Citizen, Officer
+  Widget _buildFilters() {
+    final filters = ['All', 'Citizen', 'Officer'];
+    return Row(
+      children: filters.map((f) {
+        final isSelected = _selectedFilter == f;
+        return Padding(
+          padding: const EdgeInsets.only(right: 10),
+          child: GestureDetector(
+            // tap করলে filter পরিবর্তন হবে
+            onTap: () => setState(() => _selectedFilter = f),
             child: Container(
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF7C3AED) : Colors.white,
+                color: isSelected
+                    ? const Color(0xFF7C3AED)
+                    : Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isSelected
@@ -215,173 +202,133 @@ class _AdminUsersState extends State<AdminUsers> {
                       : const Color(0xFFE5E7EB),
                 ),
               ),
-              child: Text(
-                filters[index],
-                style: TextStyle(
-                  color: isSelected ? Colors.white : const Color(0xFF6B7280),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: Text(f,
+                  style: TextStyle(
+                      color: isSelected
+                          ? Colors.white
+                          : const Color(0xFF6B7280),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      }).toList(),
     );
   }
 
+  // Search field widget
   Widget _buildSearchField() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: TextField(
-        onChanged: (value) {
-          setState(() {
-            _searchQuery = value;
-          });
-        },
-        decoration: InputDecoration(
+        // টাইপ করলে search query update হবে
+        onChanged: (v) => setState(() => _searchQuery = v),
+        decoration: const InputDecoration(
           hintText: 'Search by name or email...',
-          hintStyle: const TextStyle(
-            color: Color(0xFFB4B4B4),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-          ),
-          prefixIcon: const Icon(
-            Icons.search,
-            color: Color(0xFF9CA3AF),
-            size: 20,
-          ),
+          hintStyle: TextStyle(color: Color(0xFFB4B4B4), fontSize: 14),
+          prefixIcon:
+              Icon(Icons.search, color: Color(0xFF9CA3AF), size: 20),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          contentPadding: EdgeInsets.symmetric(vertical: 12),
         ),
       ),
     );
   }
 
+  // Filtered user list render করার widget
   Widget _buildUserList() {
-    List<Map<String, dynamic>> filteredUsers = _allUsers.where((user) {
-      final name = user['name'].toString().toLowerCase();
-      final email = user['email'].toString().toLowerCase();
-      final query = _searchQuery.toLowerCase();
-      return name.contains(query) || email.contains(query);
-    }).toList();
-
     return Column(
-      children: filteredUsers.map((user) {
+      children: _filteredUsers.map((u) {
+        final name = (u['full_name'] ?? 'Unknown') as String;
+        final email = (u['email'] ?? '') as String;
+        final role = (u['role'] ?? 'Citizen') as String;
+        final department = (u['department'] ?? '') as String;
+        // নামের প্রথম অক্ষর avatar হিসেবে দেখানো হবে
+        final initials =
+            name.isNotEmpty ? name[0].toUpperCase() : 'U';
+        // Officer হলে নীল, Citizen হলে সবুজ
+        final roleColor = role == 'Officer'
+            ? const Color(0xFF3B82F6)
+            : const Color(0xFF10B981);
+
         return GestureDetector(
-          onTap: () {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text('Viewing ${user['name']}')));
-          },
+          // tap করলে user detail screen এ navigate করবে
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (context) => AdminUserDetailScreen(user: u))),
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFE5E7EB)),
             ),
             padding: const EdgeInsets.all(16),
             child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEDE9FE),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: Text(
-                      user['initials'],
-                      style: const TextStyle(
-                        color: Color(0xFF7C3AED),
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+            children: [
+              // Avatar — নামের প্রথম অক্ষর দিয়ে
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: roleColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user['name'],
+                child: Center(
+                  child: Text(initials,
+                      style: TextStyle(
+                          color: roleColor,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // User এর নাম
+                    Text(name,
                         style: const TextStyle(
-                          color: Color(0xFF1F2937),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        user['email'],
+                            fontSize: 14, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 3),
+                    // Email
+                    Text(email,
                         style: const TextStyle(
-                          color: Color(0xFF6B7280),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFEF3C7),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              user['type'],
-                              style: const TextStyle(
-                                color: Color(0xFF92400E),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: (user['statusColor'] as Color).withOpacity(
-                                0.15,
-                              ),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              user['status'],
-                              style: TextStyle(
-                                color: user['statusColor'],
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                            color: Color(0xFF6B7280), fontSize: 12)),
+                    // Department — শুধু Officer এর জন্য দেখাবে
+                    if (department.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(department,
+                          style: const TextStyle(
+                              color: Color(0xFF9CA3AF), fontSize: 11)),
                     ],
-                  ),
+                    const SizedBox(height: 6),
+                    // Role badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: roleColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(role,
+                          style: TextStyle(
+                              color: roleColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ],
                 ),
-                const Icon(
-                  Icons.chevron_right,
-                  color: Color(0xFFD1D5DB),
-                  size: 24,
-                ),
-              ],
-            ),
+              ),
+              // Arrow icon — detail screen এ যাওয়ার ইঙ্গিত
+              const Icon(Icons.chevron_right,
+                  color: Color(0xFFD1D5DB), size: 24),
+            ],
+          ),
           ),
         );
       }).toList(),

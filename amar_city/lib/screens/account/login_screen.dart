@@ -1,7 +1,11 @@
+// Flutter material design import
 import 'package:flutter/material.dart';
+// Gesture recognizer — RichText এ tap handle করার জন্য
 import 'package:flutter/gestures.dart';
+// Auth service — login করার জন্য
 import '../../services/supabase_service.dart';
 
+// LoginScreen — App এর login page
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -10,38 +14,47 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  // Email ও password input field controller
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
+  // Password দেখানো/লুকানোর জন্য — শুরুতে লুকানো
   bool _obscurePassword = true;
+  // বর্তমানে কোন role selected — শুরুতে Citizen
   String _selectedRole = 'Citizen';
 
-  // Admin credentials
+  // Admin এর hardcoded credentials — Supabase auth ব্যবহার করে না
   static const String _adminEmail = 'admin@amarcity.com';
   static const String _adminPassword = 'Admin@1234';
 
   @override
   void initState() {
     super.initState();
+    // Controller initialize করা হচ্ছে
     _emailController = TextEditingController();
     _passwordController = TextEditingController();
   }
 
   @override
   void dispose() {
+    // Memory leak এড়াতে controller dispose করা হচ্ছে
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
+  // Password visibility toggle করার function
   void _togglePasswordVisibility() {
     setState(() {
       _obscurePassword = !_obscurePassword;
     });
   }
 
+  // Login button loading state
   bool _isLoading = false;
 
+  // Sign in button press করলে এই function call হয়
   void _handleSignIn() async {
+    // Empty field check
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -49,10 +62,11 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Admin local login
+    // Admin login — Supabase ব্যবহার না করে local check করা হচ্ছে
     if (_selectedRole == 'Admin') {
       if (_emailController.text.trim() == _adminEmail &&
           _passwordController.text == _adminPassword) {
+        // Credentials সঠিক হলে admin dashboard এ navigate
         Navigator.of(context).pushReplacementNamed('/admin');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -62,6 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    // Citizen ও Officer এর জন্য Supabase auth ব্যবহার করা হচ্ছে
     setState(() => _isLoading = true);
     try {
       final response = await AuthService.signIn(
@@ -69,6 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text,
       );
       if (response.user != null && mounted) {
+        // Role অনুযায়ী সঠিক screen এ navigate করা হচ্ছে
         if (_selectedRole == 'Officer') {
           Navigator.of(context).pushReplacementNamed('/officer');
         } else {
@@ -77,6 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
+        // Error message user-friendly করা হচ্ছে
         String message = e.toString();
         if (message.contains('email_not_confirmed')) {
           message = 'Please verify your email first. Check your inbox.';
@@ -88,6 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ).showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
+      // Loading শেষ করা হচ্ছে
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -98,6 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
+        // Blue gradient background
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -112,11 +131,12 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Header with logo
+              // Logo ও app name section
               Padding(
                 padding: const EdgeInsets.only(top: 40, bottom: 20),
                 child: Column(
                   children: [
+                    // App logo container
                     Container(
                       width: 70,
                       height: 70,
@@ -145,6 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 15),
+                    // App name
                     const Text(
                       'AmarCity',
                       style: TextStyle(
@@ -155,6 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 5),
+                    // Tagline
                     const Text(
                       'SMART MUNICIPALITY PLATFORM',
                       style: TextStyle(
@@ -167,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Login Card
+              // Login form card
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Card(
@@ -198,7 +220,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 25),
-                        // Email Field
+                        // Email input field
                         const Text(
                           'EMAIL ADDRESS',
                           style: TextStyle(
@@ -243,7 +265,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           keyboardType: TextInputType.emailAddress,
                         ),
                         const SizedBox(height: 20),
-                        // Password Field
+                        // Password input field
                         const Text(
                           'PASSWORD',
                           style: TextStyle(
@@ -256,7 +278,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 10),
                         TextField(
                           controller: _passwordController,
-                          obscureText: _obscurePassword,
+                          // _obscurePassword true হলে password লুকানো থাকবে
+                          obscureText: _obscurePassword == true,
                           decoration: InputDecoration(
                             hintText: 'Enter your password',
                             hintStyle: const TextStyle(
@@ -268,6 +291,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: Color(0xFF0066CC),
                               size: 20,
                             ),
+                            // Eye icon — password দেখানো/লুকানোর জন্য
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword
@@ -298,12 +322,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        // Forgot Password
+                        // Forgot password button
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
                             onPressed: () {
-                              // Handle forgot password
+                              // TODO: Forgot password implement করতে হবে
                             },
                             child: const Text(
                               'Forgot password?',
@@ -316,7 +340,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        // Sign In As Section
+                        // Role selection section
                         const Text(
                           'SIGN IN AS',
                           style: TextStyle(
@@ -327,7 +351,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        // Role Selection Buttons
+                        // ৩টি role button — Citizen, Officer, Admin
                         Row(
                           children: [
                             _buildRoleButton('Citizen', Icons.person),
@@ -338,11 +362,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                         const SizedBox(height: 25),
-                        // Sign In Button
+                        // Sign in button
                         SizedBox(
                           width: double.infinity,
                           height: 50,
                           child: ElevatedButton(
+                            // Loading চলাকালীন button disable থাকবে
                             onPressed: _isLoading ? null : _handleSignIn,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF0066CC),
@@ -351,6 +376,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               elevation: 2,
                             ),
+                            // Loading হলে spinner, না হলে text দেখাবে
                             child: _isLoading
                                 ? const SizedBox(
                                     width: 22,
@@ -372,7 +398,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        // Divider
+                        // Divider — 'or continue with' text সহ
                         Row(
                           children: [
                             Expanded(
@@ -400,13 +426,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        // Social Login Buttons
+                        // Social login buttons — Google ও Facebook
                         Row(
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: () {
-                                  // Handle Google sign in
+                                  // TODO: Google sign in implement করতে হবে
                                 },
                                 icon: const Text(
                                   'Google',
@@ -433,7 +459,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: () {
-                                  // Handle Facebook sign in
+                                  // TODO: Facebook sign in implement করতে হবে
                                 },
                                 icon: const Text(
                                   'Facebook',
@@ -459,7 +485,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        // Sign Up Link
+                        // Create account link
                         Center(
                           child: RichText(
                             text: TextSpan(
@@ -476,6 +502,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     color: Color(0xFF0066CC),
                                     fontWeight: FontWeight.w600,
                                   ),
+                                  // tap করলে create account screen এ navigate
                                   recognizer: TapGestureRecognizer()
                                     ..onTap = () {
                                       Navigator.of(
@@ -508,10 +535,12 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // Role selection button widget — Citizen, Officer, Admin
   Widget _buildRoleButton(String role, IconData icon) {
     bool isSelected = _selectedRole == role;
     return Expanded(
       child: GestureDetector(
+        // tap করলে selected role পরিবর্তন হবে
         onTap: () {
           setState(() {
             _selectedRole = role;
@@ -521,6 +550,7 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             border: Border.all(
+              // selected হলে নীল border, না হলে ধূসর
               color: isSelected
                   ? const Color(0xFF0066CC)
                   : const Color(0xFFE0E0E0),

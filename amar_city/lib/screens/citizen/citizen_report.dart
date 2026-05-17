@@ -1,8 +1,12 @@
+// Flutter material design import
 import 'package:flutter/material.dart';
+// Image pick করার জন্য
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
+// Database ও auth service
 import '../../services/supabase_service.dart';
 
+// CitizenReportScreen — নতুন complaint submit করার screen
 class CitizenReportScreen extends StatefulWidget {
   const CitizenReportScreen({Key? key}) : super(key: key);
 
@@ -11,15 +15,20 @@ class CitizenReportScreen extends StatefulWidget {
 }
 
 class _CitizenReportScreenState extends State<CitizenReportScreen> {
+  // বর্তমানে selected category — শুরুতে ROAD
   String _selectedCategory = 'ROAD';
+  // Form field controllers
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _locationController =
       TextEditingController(text: 'Dhaka');
+  // Selected image files ও তাদের bytes
   final List<XFile> _selectedImages = [];
   final List<Uint8List> _imageBytes = [];
+  // Submit loading state
   bool _isLoading = false;
 
+  // Available complaint categories
   final List<Map<String, dynamic>> _categories = [
     {'name': 'ROAD', 'label': 'Road', 'icon': Icons.warning_amber, 'color': Color(0xFFFCD34D)},
     {'name': 'LIGHTING', 'label': 'Lighting', 'icon': Icons.lightbulb_outline, 'color': Color(0xFFFCD34D)},
@@ -30,13 +39,26 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
 
   @override
   void dispose() {
+    // Memory leak এড়াতে controller dispose করা হচ্ছে
     _titleController.dispose();
     _descriptionController.dispose();
     _locationController.dispose();
     super.dispose();
   }
 
+  // Category অনুযায়ী কোন department এ complaint যাবে তা নির্ধারণ
+  static const Map<String, String> _categoryDepartment = {
+    'ROAD':     'Engineering Department',
+    'LIGHTING': 'Engineering Department',
+    'GARBAGE':  'Waste Management Department',
+    'DRAINAGE': 'Waste Management Department',
+    'WATER':    'Public Health & Sanitation Department',
+    'OTHER':    'Engineering Department',
+  };
+
+  // Complaint submit করার function
   Future<void> _submitComplaint() async {
+    // সব required field পূরণ হয়েছে কিনা check
     if (_titleController.text.trim().isEmpty ||
         _descriptionController.text.trim().isEmpty ||
         _locationController.text.trim().isEmpty) {
@@ -51,13 +73,16 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
 
     setState(() => _isLoading = true);
     try {
+      // Supabase complaints table এ নতুন row insert করা হচ্ছে
       await supabase.from('complaints').insert({
         'citizen_id': AuthService.currentUser!.id,
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
         'category': _selectedCategory,
         'location': _locationController.text.trim(),
-        'status': 'New',
+        'status': 'New', // নতুন complaint এর default status
+        // Category অনুযায়ী department automatically set হচ্ছে
+        'assigned_department': _categoryDepartment[_selectedCategory] ?? 'Engineering Department',
       });
 
       if (mounted) {
@@ -67,6 +92,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
             backgroundColor: Color(0xFF059669),
           ),
         );
+        // Submit হলে আগের screen এ ফিরে যাচ্ছে
         Navigator.of(context).pop();
       }
     } catch (e) {
@@ -83,6 +109,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
     }
   }
 
+  // Photo source selection bottom sheet দেখানোর function
   void _showImageSourceSheet() {
     showModalBottomSheet(
       context: context,
@@ -93,6 +120,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Handle bar
             Container(
               width: 40,
               height: 4,
@@ -107,6 +135,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
             const SizedBox(height: 20),
             Row(
               children: [
+                // Camera option
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
@@ -137,6 +166,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
                   ),
                 ),
                 const SizedBox(width: 16),
+                // Gallery option
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
@@ -175,9 +205,11 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
     );
   }
 
+  // Camera বা gallery থেকে image pick করার function
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     if (source == ImageSource.gallery) {
+      // Gallery থেকে multiple image select করা যাবে
       final images = await picker.pickMultiImage(
           maxWidth: 1000, maxHeight: 1000, imageQuality: 80);
       for (final img in images) {
@@ -188,6 +220,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
         });
       }
     } else {
+      // Camera থেকে একটি image তোলা হবে
       final image = await picker.pickImage(
           source: ImageSource.camera,
           maxWidth: 1000,
@@ -222,12 +255,12 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Category
+            // Category selection
             _buildSectionTitle('ISSUE CATEGORY'),
             const SizedBox(height: 12),
             _buildCategorySelector(),
             const SizedBox(height: 24),
-            // Title
+            // Issue title field
             _buildSectionTitle('ISSUE TITLE'),
             const SizedBox(height: 12),
             _buildTextField(
@@ -235,7 +268,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
               hint: 'e.g. Large pothole causing accidents...',
             ),
             const SizedBox(height: 24),
-            // Location
+            // Location field
             _buildSectionTitle('LOCATION'),
             const SizedBox(height: 12),
             _buildTextField(
@@ -244,7 +277,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
               icon: Icons.location_on_outlined,
             ),
             const SizedBox(height: 24),
-            // Description
+            // Description field — multiline
             _buildSectionTitle('DESCRIPTION'),
             const SizedBox(height: 12),
             _buildTextField(
@@ -253,12 +286,12 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
               maxLines: 5,
             ),
             const SizedBox(height: 24),
-            // Photo Evidence
+            // Photo upload section
             _buildSectionTitle('PHOTO EVIDENCE'),
             const SizedBox(height: 12),
             _buildPhotoUploader(),
             const SizedBox(height: 32),
-            // Submit
+            // Submit button
             SizedBox(
               width: double.infinity,
               height: 56,
@@ -270,6 +303,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
                       borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
+                // Loading হলে spinner, না হলে text
                 child: _isLoading
                     ? const SizedBox(
                         width: 24,
@@ -290,6 +324,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
     );
   }
 
+  // Section title widget — uppercase ধূসর text
   Widget _buildSectionTitle(String title) => Text(title,
       style: const TextStyle(
           color: Color(0xFF6B7280),
@@ -297,6 +332,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
           fontWeight: FontWeight.bold,
           letterSpacing: 0.5));
 
+  // Reusable text field widget
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
@@ -310,6 +346,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
         hintText: hint,
         hintStyle:
             const TextStyle(color: Color(0xFFB4B4B4), fontSize: 14),
+        // Single line field এ icon দেখাবে, multiline এ না
         prefixIcon: maxLines == 1
             ? Icon(icon, color: const Color(0xFF1E40AF), size: 20)
             : null,
@@ -331,6 +368,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
     );
   }
 
+  // Category selector — horizontally scrollable icon buttons
   Widget _buildCategorySelector() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -339,6 +377,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
           final isSelected = _selectedCategory == cat['name'];
           final color = cat['color'] as Color;
           return GestureDetector(
+            // tap করলে category select হবে
             onTap: () => setState(() => _selectedCategory = cat['name']),
             child: Padding(
               padding: const EdgeInsets.only(right: 16),
@@ -348,6 +387,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
+                      // selected হলে color background, না হলে white
                       color: isSelected
                           ? color.withOpacity(0.2)
                           : Theme.of(context).cardColor,
@@ -360,6 +400,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
                         color: color, size: 28),
                   ),
                   const SizedBox(height: 8),
+                  // Category label
                   Text(cat['label'] as String,
                       style: TextStyle(
                           color: isSelected
@@ -376,10 +417,12 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
     );
   }
 
+  // Photo uploader widget — image না থাকলে placeholder, থাকলে grid দেখাবে
   Widget _buildPhotoUploader() {
     return GestureDetector(
       onTap: _showImageSourceSheet,
       child: Container(
+        // Image থাকলে বড়, না থাকলে ছোট height
         height: _selectedImages.isEmpty ? 140 : 200,
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
@@ -387,6 +430,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
           border: Border.all(color: const Color(0xFFE5E7EB)),
         ),
         child: _selectedImages.isEmpty
+            // Image নেই — placeholder দেখাচ্ছে
             ? Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
@@ -404,6 +448,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
                           color: Color(0xFF9CA3AF), fontSize: 12)),
                 ],
               )
+            // Image আছে — grid এ দেখাচ্ছে
             : Padding(
                 padding: const EdgeInsets.all(12),
                 child: GridView.builder(
@@ -413,9 +458,11 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
                           crossAxisCount: 3,
                           crossAxisSpacing: 8,
                           mainAxisSpacing: 8),
+                  // শেষে একটি '+' button থাকবে আরো image add করতে
                   itemCount: _selectedImages.length + 1,
                   itemBuilder: (context, index) {
                     if (index == _selectedImages.length) {
+                      // '+' button — আরো image add করতে
                       return GestureDetector(
                         onTap: _showImageSourceSheet,
                         child: Container(
@@ -430,6 +477,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
                         ),
                       );
                     }
+                    // Image thumbnail — উপরে delete button সহ
                     return Stack(
                       fit: StackFit.expand,
                       children: [
@@ -438,6 +486,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
                           child: Image.memory(_imageBytes[index],
                               fit: BoxFit.cover),
                         ),
+                        // Delete button — image remove করতে
                         Positioned(
                           top: 4,
                           right: 4,
