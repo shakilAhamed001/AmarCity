@@ -22,8 +22,9 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
   void initState() {
     super.initState();
     final user = AuthService.currentUser;
-    _nameController =
-        TextEditingController(text: user?.userMetadata?['full_name'] ?? '');
+    _nameController = TextEditingController(
+      text: user?.userMetadata?['full_name'] ?? '',
+    );
     _emailController = TextEditingController(text: user?.email ?? '');
   }
 
@@ -42,12 +43,12 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
     setState(() => _isLoading = true);
     try {
       await supabase.auth.updateUser(
-        UserAttributes(
-            data: {'full_name': _nameController.text.trim()}),
+        UserAttributes(data: {'full_name': _nameController.text.trim()}),
       );
-      await supabase.from('profiles').update({
-        'full_name': _nameController.text.trim(),
-      }).eq('id', AuthService.currentUser!.id);
+      await supabase
+          .from('profiles')
+          .update({'full_name': _nameController.text.trim()})
+          .eq('id', AuthService.currentUser!.id);
 
       if (mounted) {
         _showSnack('Profile updated successfully');
@@ -72,13 +73,17 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back,
-              color: Theme.of(context).colorScheme.onSurface),
+          icon: Icon(
+            Icons.arrow_back,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         centerTitle: true,
-        title: const Text('Edit Profile',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Edit Profile',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _save,
@@ -86,12 +91,16 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
                 ? const SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Save',
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text(
+                    'Save',
                     style: TextStyle(
-                        color: Color(0xFF1E40AF),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16)),
+                      color: Color(0xFF1E40AF),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -108,9 +117,10 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
                 child: Text(
                   userName.isNotEmpty ? userName[0].toUpperCase() : 'O',
                   style: const TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white),
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -132,12 +142,17 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
               readOnly: true,
             ),
             const SizedBox(height: 4),
-            const Text('Email cannot be changed here.',
-                style: TextStyle(fontSize: 11, color: Colors.grey)),
+            const Text(
+              'Email cannot be changed here.',
+              style: TextStyle(fontSize: 11, color: Colors.grey),
+            ),
             if (_department.isNotEmpty == true) ...[
               const SizedBox(height: 16),
-              _buildReadOnlyInfo('DEPARTMENT', _department,
-                  Icons.business_outlined),
+              _buildReadOnlyInfo(
+                'DEPARTMENT',
+                _department,
+                Icons.business_outlined,
+              ),
             ],
             const SizedBox(height: 32),
             SizedBox(
@@ -148,19 +163,26 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1E40AF),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 child: _isLoading
                     ? const SizedBox(
                         width: 22,
                         height: 22,
                         child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
-                    : const Text('Save Changes',
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Save Changes',
                         style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white)),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -169,23 +191,29 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) => Text(title,
-      style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF1E40AF),
-          letterSpacing: 0.5));
+  Widget _buildSectionTitle(String title) => Text(
+    title,
+    style: const TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.bold,
+      color: Color(0xFF1E40AF),
+      letterSpacing: 0.5,
+    ),
+  );
 
   Widget _buildReadOnlyInfo(String label, String value, IconData icon) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF333333),
-                letterSpacing: 0.5)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF333333),
+            letterSpacing: 0.5,
+          ),
+        ),
         const SizedBox(height: 6),
         Container(
           width: double.infinity,
@@ -199,9 +227,14 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
               Icon(icon, color: const Color(0xFF1E40AF), size: 18),
               const SizedBox(width: 10),
               Expanded(
-                  child: Text(value,
-                      style: const TextStyle(
-                          fontSize: 13, color: Color(0xFF555555)))),
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF555555),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -219,34 +252,42 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF333333),
-                letterSpacing: 0.5)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF333333),
+            letterSpacing: 0.5,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
           readOnly: readOnly,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle:
-                const TextStyle(color: Color(0xFF999999), fontSize: 13),
+            hintStyle: const TextStyle(color: Color(0xFF999999), fontSize: 13),
             prefixIcon: Icon(icon, color: const Color(0xFF1E40AF), size: 18),
             filled: true,
             fillColor: readOnly
                 ? const Color(0xFFEEEEEE)
                 : const Color(0xFFF5F5F5),
             border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none),
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
+            ),
             focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(
-                    color: Color(0xFF1E40AF), width: 1.5)),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(
+                color: Color(0xFF1E40AF),
+                width: 1.5,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
           ),
         ),
       ],
