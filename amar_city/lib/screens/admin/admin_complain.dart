@@ -1,9 +1,6 @@
-// Flutter material design import
 import 'package:flutter/material.dart';
-// Supabase client ব্যবহারের জন্য
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../services/supabase_service.dart';
 
-// AdminComplaints — Admin এর complaint management screen
 class AdminComplaints extends StatefulWidget {
   const AdminComplaints({Key? key}) : super(key: key);
 
@@ -12,185 +9,239 @@ class AdminComplaints extends StatefulWidget {
 }
 
 class _AdminComplaintsState extends State<AdminComplaints> {
-  // বর্তমানে কোন filter selected — শুরুতে 'All (52)'
-  String _selectedFilter = 'All (52)';
-  // Search field এ কী লেখা আছে
+  String _selectedFilter = 'All';
+  String _selectedDepartment = 'All';
   String _searchQuery = '';
-  // Database থেকে আনা officer list — assign dialog এ দেখানো হবে
+  List<Map<String, dynamic>> _allComplaints = [];
   List<Map<String, dynamic>> _allOfficers = [];
+  bool _isLoading = true;
 
-  // Static complaint data — পরে database থেকে আনা যাবে
-  final List<Map<String, dynamic>> _allComplaints = [
-    {
-      'id': 'EAC-3891',
-      'icon': Icons.construction,
-      'iconColor': const Color(0xFFFCD34D),
-      'title': 'Cave-in near School — Road 3',
-      'location': 'Motijheel, Dhaka',
-      'reporter': 'Rahim Ahmed',
-      'priority': 'High',
-      'priorityColor': const Color(0xFFEF4444),
-      'status': 'New',
-      'statusColor': const Color(0xFF7C3AED),
-      'timeAgo': '2h ago',
-    },
-    {
-      'id': 'EAC-3889',
-      'icon': Icons.water_drop,
-      'iconColor': const Color(0xFF3B82F6),
-      'title': 'Water main burst — Block C',
-      'location': 'Gulshan, Dhaka',
-      'reporter': 'Karim Hossain',
-      'priority': 'High',
-      'priorityColor': const Color(0xFFEF4444),
-      'status': 'Escalated',
-      'statusColor': const Color(0xFFEF4444),
-      'timeAgo': '3h ago',
-    },
-    {
-      'id': 'EAC-3888',
-      'icon': Icons.delete_outline,
-      'iconColor': const Color(0xFF6B7280),
-      'title': 'Drain overflow — Street 7',
-      'location': 'Dhanmondi, Dhaka',
-      'reporter': 'Sabikr Hasan',
-      'priority': 'High',
-      'priorityColor': const Color(0xFFEF4444),
-      'status': 'New',
-      'statusColor': const Color(0xFF7C3AED),
-      'timeAgo': '4h ago',
-    },
-    {
-      'id': 'EAC-3884',
-      'icon': Icons.lightbulb_outline,
-      'iconColor': const Color(0xFFFCD34D),
-      'title': 'Street lights not working',
-      'location': 'Banani, Dhaka',
-      'reporter': 'Fatima Ahmed',
-      'priority': 'Medium',
-      'priorityColor': const Color(0xFFF59E0B),
-      'status': 'In progress',
-      'statusColor': const Color(0xFF3B82F6),
-      'timeAgo': '4h ago',
-    },
+  final List<String> _departments = [
+    'All',
+    'Engineering Department',
+    'Waste Management Department',
+    'Public Health & Sanitation Department',
+    'Trade License Issuance & Registration Department',
   ];
 
   @override
   void initState() {
     super.initState();
-    // Screen load হলে officer list fetch করা হচ্ছে
+    _fetchComplaints();
     _fetchOfficers();
   }
 
-  // Supabase থেকে সব officer fetch করার function
-  Future<void> _fetchOfficers() async {
+  Future<void> _fetchComplaints() async {
+    setState(() => _isLoading = true);
     try {
-      final supabase = Supabase.instance.client;
-      // profiles table থেকে শুধু Officer role এর user আনা হচ্ছে
       final data = await supabase
-          .from('profiles')
+          .from('complaints')
           .select()
-          .eq('role', 'officer');
+          .order('created_at', ascending: false);
+
+      final list = <Map<String, dynamic>>[];
+      for (final item in (data as List)) {
+        list.add(Map<String, dynamic>.from(item as Map));
+      }
+
       setState(() {
-        _allOfficers = List<Map<String, dynamic>>.from(data);
+        _allComplaints = list;
+        _isLoading = false;
       });
     } catch (e) {
-      debugPrint('Error fetching officers: $e');
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 
-  // Complaint এ officer assign করার dialog দেখানোর function
-  Future<void> _assignOfficerDialog(Map<String, dynamic> complaint) async {
-    String? selectedOfficerId;
+  Future<void> _fetchOfficers() async {
+    try {
+      final data = await supabase.from('profiles').select();
+      final all = <Map<String, dynamic>>[];
+      for (final item in (data as List)) {
+        all.add(Map<String, dynamic>.from(item as Map));
+      }
+      setState(() {
+        _allOfficers = all
+            .where(
+              (o) => (o['role'] as String? ?? '').toLowerCase() == 'officer',
+            )
+            .toList();
+      });
+    } catch (e) {
+      debugPrint('Officers error: $e');
+    }
+  }
+
+  Future<void> _showAssignDialog(Map<String, dynamic> complaint) async {
+    final dept = complaint['assigned_department'] as String? ?? '';
+    final deptOfficers = dept.isEmpty
+        ? _allOfficers
+        : _allOfficers
+              .where((o) => (o['department'] as String? ?? '') == dept)
+              .toList();
+
+    String? selectedOfficerId = complaint['assigned_officer_id'] as String?;
+
     await showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
           title: const Text('Assign Officer'),
-          content: SizedBox(
-            width: 300,
-            // Officer list থেকে dropdown এ select করা যাবে
-            child: DropdownButtonFormField<String>(
-              isExpanded: true,
-              value: selectedOfficerId,
-              items: _allOfficers.map((officer) {
-                return DropdownMenuItem<String>(
-                  value: officer['id'],
-                  child: Text(
-                    // full_name না থাকলে email দেখাবে
-                    officer['full_name'] ?? officer['email'] ?? 'Officer',
+          content: deptOfficers.isEmpty
+              ? Text(
+                  'No officers found for "$dept"',
+                  style: const TextStyle(color: Color(0xFF6B7280)),
+                )
+              : DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  value: selectedOfficerId,
+                  decoration: const InputDecoration(
+                    labelText: 'Select Officer',
                   ),
-                );
-              }).toList(),
-              onChanged: (val) {
-                selectedOfficerId = val;
-              },
-              decoration: const InputDecoration(labelText: 'Select Officer'),
-            ),
-          ),
+                  items: deptOfficers.map((o) {
+                    return DropdownMenuItem<String>(
+                      value: o['id']?.toString(),
+                      child: Text(
+                        (o['full_name'] ?? o['email'] ?? 'Officer').toString(),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (val) =>
+                      setDialogState(() => selectedOfficerId = val),
+                ),
           actions: [
-            // Cancel button — dialog বন্ধ করবে
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(ctx),
               child: const Text('Cancel'),
             ),
-            // Assign button — database update করবে
-            ElevatedButton(
-              onPressed: () async {
-                if (selectedOfficerId != null) {
+            if (deptOfficers.isNotEmpty)
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7C3AED),
+                ),
+                onPressed: () async {
+                  if (selectedOfficerId == null) return;
                   try {
-                    final supabase = Supabase.instance.client;
-                    // complaints table এ assigned_officer_id update করা হচ্ছে
                     await supabase
                         .from('complaints')
                         .update({'assigned_officer_id': selectedOfficerId})
                         .eq('id', complaint['id']);
-                    setState(() {
-                      complaint['assigned_officer_id'] = selectedOfficerId;
-                    });
+                    final idx = _allComplaints.indexWhere(
+                      (c) => c['id'] == complaint['id'],
+                    );
+                    if (idx != -1) {
+                      setState(
+                        () => _allComplaints[idx]['assigned_officer_id'] =
+                            selectedOfficerId,
+                      );
+                    }
                     if (mounted) {
-                      Navigator.pop(context);
+                      Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Officer assigned successfully!'),
+                          content: Text('Officer assigned!'),
+                          backgroundColor: Color(0xFF059669),
                         ),
                       );
                     }
                   } catch (e) {
-                    debugPrint('Error assigning officer: $e');
+                    debugPrint('Assign error: $e');
                   }
-                }
-              },
-              child: const Text('Assign'),
-            ),
+                },
+                child: const Text(
+                  'Assign',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
           ],
-        );
-      },
+        ),
+      ),
     );
+  }
+
+  List<Map<String, dynamic>> get _filtered {
+    return _allComplaints.where((c) {
+      final title = (c['title'] as String? ?? '').toLowerCase();
+      final location = (c['location'] as String? ?? '').toLowerCase();
+      final status = c['status'] as String? ?? '';
+      final dept = c['assigned_department'] as String? ?? '';
+      final query = _searchQuery.toLowerCase();
+      final matchSearch = title.contains(query) || location.contains(query);
+      final matchStatus = _selectedFilter == 'All' || status == _selectedFilter;
+      final matchDept =
+          _selectedDepartment == 'All' || dept == _selectedDepartment;
+      return matchSearch && matchStatus && matchDept;
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: Column(
         children: [
-          // উপরের gradient header
           _buildHeader(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Filter chips — All, Unassigned, New, In progress
-                _buildFilters(),
-                const SizedBox(height: 20),
-                // Search field
-                _buildSearchField(),
-                const SizedBox(height: 20),
-                // Complaint card list
-                _buildComplaintsList(),
-                const SizedBox(height: 40),
-              ],
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _fetchComplaints,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 20,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStatusFilters(),
+                    const SizedBox(height: 12),
+                    _buildDepartmentFilter(),
+                    const SizedBox(height: 12),
+                    _buildSearchField(),
+                    const SizedBox(height: 16),
+                    if (_isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(40),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (_allComplaints.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Center(
+                          child: Text(
+                            'No complaints found in database.',
+                            style: TextStyle(color: Color(0xFF6B7280)),
+                          ),
+                        ),
+                      )
+                    else if (_filtered.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Center(
+                          child: Text(
+                            'No complaints match the filter.',
+                            style: TextStyle(color: Color(0xFF6B7280)),
+                          ),
+                        ),
+                      )
+                    else
+                      Column(
+                        children: _filtered.map((c) => _buildCard(c)).toList(),
+                      ),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -198,7 +249,6 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     );
   }
 
-  // Header widget — gradient background সহ
   Widget _buildHeader() {
     return Container(
       decoration: const BoxDecoration(
@@ -212,47 +262,10 @@ class _AdminComplaintsState extends State<AdminComplaints> {
           bottomRight: Radius.circular(24),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.fromLTRB(20, 48, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const SizedBox(),
-              // Notification icon
-              Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.notifications_none,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          // সময় দেখানো হচ্ছে
-          const Text(
-            '8:50',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Page title
           const Text(
             'Complaints',
             style: TextStyle(
@@ -262,43 +275,28 @@ class _AdminComplaintsState extends State<AdminComplaints> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'View all reported issues',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-            ),
+          Text(
+            '${_allComplaints.length} total complaints',
+            style: const TextStyle(color: Colors.white70, fontSize: 13),
           ),
-          const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  // Filter chips — horizontally scrollable
-  Widget _buildFilters() {
-    final filters = ['All (52)', 'Unassigned (4)', 'New', 'In progress'];
-
-    return SizedBox(
-      height: 36,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: filters.length,
-        itemBuilder: (context, index) {
-          bool isSelected = _selectedFilter == filters[index];
+  Widget _buildStatusFilters() {
+    final filters = ['All', 'New', 'In progress', 'Escalated', 'Resolved'];
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: filters.map((f) {
+          final isSelected = _selectedFilter == f;
           return GestureDetector(
-            // tap করলে filter পরিবর্তন হবে
-            onTap: () {
-              setState(() {
-                _selectedFilter = filters[index];
-              });
-            },
+            onTap: () => setState(() => _selectedFilter = f),
             child: Container(
-              margin: const EdgeInsets.only(right: 12),
+              margin: const EdgeInsets.only(right: 10),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                // selected হলে বেগুনি background
                 color: isSelected ? const Color(0xFF7C3AED) : Colors.white,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
@@ -308,7 +306,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                 ),
               ),
               child: Text(
-                filters[index],
+                f,
                 style: TextStyle(
                   color: isSelected ? Colors.white : const Color(0xFF6B7280),
                   fontSize: 12,
@@ -317,12 +315,36 @@ class _AdminComplaintsState extends State<AdminComplaints> {
               ),
             ),
           );
-        },
+        }).toList(),
       ),
     );
   }
 
-  // Search field widget
+  Widget _buildDepartmentFilter() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedDepartment,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF7C3AED)),
+          style: const TextStyle(color: Color(0xFF1F2937), fontSize: 13),
+          items: _departments
+              .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+              .toList(),
+          onChanged: (val) {
+            if (val != null) setState(() => _selectedDepartment = val);
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildSearchField() {
     return Container(
       decoration: BoxDecoration(
@@ -331,235 +353,287 @@ class _AdminComplaintsState extends State<AdminComplaints> {
         border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: TextField(
-        // টাইপ করলে search query update হবে
-        onChanged: (value) {
-          setState(() {
-            _searchQuery = value;
-          });
-        },
-        decoration: InputDecoration(
+        onChanged: (v) => setState(() => _searchQuery = v),
+        decoration: const InputDecoration(
           hintText: 'Search complaint or location...',
-          hintStyle: const TextStyle(
-            color: Color(0xFFB4B4B4),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-          ),
-          prefixIcon: const Icon(
-            Icons.search,
-            color: Color(0xFF9CA3AF),
-            size: 20,
-          ),
+          hintStyle: TextStyle(color: Color(0xFFB4B4B4), fontSize: 14),
+          prefixIcon: Icon(Icons.search, color: Color(0xFF9CA3AF), size: 20),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          contentPadding: EdgeInsets.symmetric(vertical: 12),
         ),
       ),
     );
   }
 
-  // Complaint list — search query দিয়ে filter করা হচ্ছে
-  Widget _buildComplaintsList() {
-    // title বা location এ search query আছে কিনা check করে filter
-    List<Map<String, dynamic>> filteredComplaints = _allComplaints.where((
-      complaint,
-    ) {
-      final title = complaint['title'].toString().toLowerCase();
-      final location = complaint['location'].toString().toLowerCase();
-      final query = _searchQuery.toLowerCase();
-      return title.contains(query) || location.contains(query);
-    }).toList();
+  Widget _buildCard(Map<String, dynamic> c) {
+    final status = c['status'] as String? ?? 'New';
+    final statusColor = _statusColor(status);
+    final category = c['category'] as String? ?? 'OTHER';
+    final title = c['title'] as String? ?? '';
+    final location = c['location'] as String? ?? '';
+    final dept = c['assigned_department'] as String? ?? '';
+    final date = _formatDate(c['created_at'] as String?);
+    final isAssigned = c['assigned_officer_id'] != null;
 
-    return Column(
-      children: filteredComplaints.map((complaint) {
-        return GestureDetector(
-          onTap: () {
-            // complaint tap করলে ID দেখানো হচ্ছে
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Viewing ${complaint['id']}')),
-            );
-          },
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    // Category icon
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: (complaint['iconColor'] as Color).withOpacity(
-                          0.15,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        complaint['icon'],
-                        color: complaint['iconColor'],
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              // Complaint ID
-                              Expanded(
-                                child: Text(
-                                  complaint['id'],
-                                  style: const TextStyle(
-                                    color: Color(0xFF6B7280),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                              // Status badge
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: (complaint['statusColor'] as Color)
-                                      .withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  complaint['status'],
-                                  style: TextStyle(
-                                    color: complaint['statusColor'],
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          // Complaint title
-                          Text(
-                            complaint['title'],
-                            style: const TextStyle(
-                              color: Color(0xFF1F2937),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+    final assignedOfficer = isAssigned
+        ? _allOfficers.firstWhere(
+            (o) => o['id']?.toString() == c['assigned_officer_id']?.toString(),
+            orElse: () => {},
+          )
+        : <String, dynamic>{};
+    final officerName = assignedOfficer.isNotEmpty
+        ? (assignedOfficer['full_name'] ?? assignedOfficer['email'] ?? '')
+              .toString()
+        : '';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: _categoryColor(category).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const SizedBox(width: 56),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Location
-                          Text(
-                            complaint['location'],
-                            style: const TextStyle(
-                              color: Color(0xFF6B7280),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          // Reporter name
-                          Text(
-                            'Reporter: ${complaint['reporter']}',
-                            style: const TextStyle(
-                              color: Color(0xFF9CA3AF),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                child: Icon(
+                  _categoryIcon(category),
+                  color: _categoryColor(category),
+                  size: 22,
                 ),
-                const SizedBox(height: 12),
-                Row(
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(width: 56),
-                    // Priority badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: (complaint['priorityColor'] as Color)
-                            .withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        complaint['priority'],
-                        style: TextStyle(
-                          color: complaint['priorityColor'],
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // কতক্ষণ আগে submit হয়েছে
-                    Text(
-                      complaint['timeAgo'],
-                      style: const TextStyle(
-                        color: Color(0xFF9CA3AF),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    const Spacer(),
-                    // Officer assign করার button
-                    GestureDetector(
-                      onTap: () => _assignOfficerDialog(complaint),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEDE9FE),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Text(
-                          'Assign officer >',
-                          style: TextStyle(
-                            color: Color(0xFF7C3AED),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          category,
+                          style: const TextStyle(
+                            color: Color(0xFF6B7280),
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            status,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Color(0xFF1F2937),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      }).toList(),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(
+                Icons.location_on_outlined,
+                size: 13,
+                color: Color(0xFF6B7280),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  location,
+                  style: const TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              Text(
+                date,
+                style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 11),
+              ),
+            ],
+          ),
+          if (dept.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF7C3AED).withOpacity(0.08),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                dept,
+                style: const TextStyle(
+                  color: Color(0xFF7C3AED),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (officerName.isNotEmpty)
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.person_outline,
+                        size: 13,
+                        color: Color(0xFF059669),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          officerName,
+                          style: const TextStyle(
+                            color: Color(0xFF059669),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                const Text(
+                  'Unassigned',
+                  style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 11),
+                ),
+              GestureDetector(
+                onTap: () => _showAssignDialog(c),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isAssigned
+                        ? const Color(0xFFDCFCE7)
+                        : const Color(0xFFEDE9FE),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    isAssigned ? 'Reassign >' : 'Assign >',
+                    style: TextStyle(
+                      color: isAssigned
+                          ? const Color(0xFF059669)
+                          : const Color(0xFF7C3AED),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'In progress':
+        return const Color(0xFFF59E0B);
+      case 'Resolved':
+        return const Color(0xFF059669);
+      case 'Escalated':
+        return const Color(0xFFDC2626);
+      default:
+        return const Color(0xFF3B82F6);
+    }
+  }
+
+  IconData _categoryIcon(String category) {
+    switch (category) {
+      case 'ROAD':
+        return Icons.warning_amber;
+      case 'LIGHTING':
+        return Icons.lightbulb_outline;
+      case 'GARBAGE':
+        return Icons.delete_outline;
+      case 'DRAINAGE':
+      case 'WATER':
+        return Icons.water_drop_outlined;
+      default:
+        return Icons.report_outlined;
+    }
+  }
+
+  Color _categoryColor(String category) {
+    switch (category) {
+      case 'ROAD':
+      case 'LIGHTING':
+        return const Color(0xFFFCD34D);
+      case 'GARBAGE':
+        return const Color(0xFF6B7280);
+      case 'DRAINAGE':
+        return const Color(0xFF3B82F6);
+      case 'WATER':
+        return const Color(0xFF60A5FA);
+      default:
+        return const Color(0xFF9CA3AF);
+    }
+  }
+
+  String _formatDate(String? iso) {
+    if (iso == null) return '';
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return '';
+    const m = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${m[dt.month - 1]} ${dt.day}';
   }
 }

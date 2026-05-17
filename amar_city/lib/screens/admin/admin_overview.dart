@@ -42,14 +42,17 @@ class _AdminOverviewState extends State<AdminOverview> {
       // UI update করা হচ্ছে নতুন count দিয়ে
       setState(() {
         // role == 'Citizen' এমন user গুলো filter করে count নেওয়া হচ্ছে
-        _citizenCount =
-            users.where((u) => u['role']?.toString() == 'Citizen').length;
+        _citizenCount = users
+            .where((u) => u['role']?.toString() == 'Citizen')
+            .length;
         // role == 'Officer' এমন user গুলো filter করে count নেওয়া হচ্ছে
-        _officerCount =
-            users.where((u) => u['role']?.toString() == 'Officer').length;
+        _officerCount = users
+            .where((u) => u['role']?.toString() == 'Officer')
+            .length;
         // role == 'Admin' এমন user গুলো filter করে count নেওয়া হচ্ছে
-        _adminCount =
-            users.where((u) => u['role']?.toString() == 'Admin').length;
+        _adminCount = users
+            .where((u) => u['role']?.toString() == 'Admin')
+            .length;
         // Data load শেষ, loading indicator বন্ধ করা হচ্ছে
         _loadingUsers = false;
       });
@@ -165,8 +168,11 @@ class _AdminOverviewState extends State<AdminOverview> {
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.notifications_none,
-                        color: Colors.white, size: 18),
+                    child: const Icon(
+                      Icons.notifications_none,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ],
               ),
@@ -205,7 +211,8 @@ class _AdminOverviewState extends State<AdminOverview> {
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
       shrinkWrap: true, // Column এর ভেতরে থাকায় নিজের height নিজে নেবে
-      physics: const NeverScrollableScrollPhysics(), // এই grid নিজে scroll করবে না
+      physics:
+          const NeverScrollableScrollPhysics(), // এই grid নিজে scroll করবে না
       childAspectRatio: 0.9,
       children: [
         // প্রতিটি card এ value, label এবং color দেওয়া হচ্ছে

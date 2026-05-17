@@ -18,20 +18,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
   // বর্তমানে কোন tab selected আছে তা track করে — শুরুতে 0 (Overview)
   int _selectedTab = 0;
 
-  // ৪টি tab এর screen list — index দিয়ে access করা হয়
-  final List<Widget> _tabs = [
-    const AdminOverview(),   // index 0 — Dashboard overview
-    const AdminUsers(),      // index 1 — User management
-    const AdminComplaints(), // index 2 — Complaints list
-    const AdminProfile(),    // index 3 — Admin profile
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       // _selectedTab অনুযায়ী সঠিক screen দেখানো হচ্ছে
-      body: _tabs[_selectedTab],
+      body: IndexedStack(
+        index: _selectedTab,
+        children: const [
+          AdminOverview(),
+          AdminUsers(),
+          AdminComplaints(),
+          AdminProfile(),
+        ],
+      ),
       // নিচের navigation bar
       bottomNavigationBar: _buildBottomNavigation(),
     );
