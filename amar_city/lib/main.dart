@@ -1,21 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'screens/splash/splash_screen.dart';
+import 'screens/account/login_screen.dart';
+import 'screens/account/create_account.dart';
+import 'screens/officer/officer_screen.dart';
+import 'screens/citizen/citizen_screen.dart';
+import 'screens/admin/admin_dashboard.dart';
+import 'screens/forget_password/reset_password_screen.dart';
+import 'services/supabase_service.dart';
+import 'services/theme_notifier.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Supabase.initialize(
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
+  );
   runApp(const MainApp());
 }
-// test 
-//test 2
-class MainApp extends StatelessWidget {
+
+class MainApp extends StatefulWidget {
   const MainApp({super.key});
 
   @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  final _themeNotifier = ThemeNotifier();
+
+  @override
+  void initState() {
+    super.initState();
+    _themeNotifier.addListener(() => setState(() {}));
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
+    return MaterialApp(
+      title: 'AmarCity',
+      debugShowCheckedModeBanner: false,
+      themeMode: _themeNotifier.isDark ? ThemeMode.dark : ThemeMode.light,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: const Color(0xFF1E40AF),
+        brightness: Brightness.light,
       ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: const Color(0xFF1E40AF),
+        brightness: Brightness.dark,
+      ),
+      home: const SplashScreen(),
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/create_account': (context) => const CreateAccountScreen(),
+        '/home': (context) => const CitizenScreen(),
+        '/officer': (context) => const OfficerScreen(),
+        '/citizen': (context) => const CitizenScreen(),
+        '/admin': (context) => const AdminDashboard(),
+        '/reset_password': (context) => const ResetPasswordScreen(),
+      },
     );
   }
 }
