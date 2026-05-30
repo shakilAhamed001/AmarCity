@@ -1,9 +1,7 @@
 // Supabase Flutter package import — database ও auth এর জন্য
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Supabase project এর URL — এটা দিয়ে database connect হয়
 const String supabaseUrl = 'https://oljsrexiazknzdveaqkj.supabase.co';
-// Anonymous key — public access এর জন্য, secret না
 const String supabaseAnonKey = 'sb_publishable_uSHuEtUY-ehFPRC8duG6kQ_V6uurT1k';
 
 // Global supabase client — যেকোনো file থেকে এটা দিয়ে database access করা যাবে

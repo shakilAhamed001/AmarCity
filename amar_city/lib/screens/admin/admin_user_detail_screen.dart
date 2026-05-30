@@ -64,9 +64,8 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
     final postal = (u['postal_code'] ?? '') as String;
     final country = (u['country'] ?? '') as String;
     // Officer হলে নীল, Citizen হলে সবুজ
-    final roleColor = role == 'Officer'
-        ? const Color(0xFF3B82F6)
-        : const Color(0xFF10B981);
+    final roleColor =
+        role == 'Officer' ? const Color(0xFF3B82F6) : const Color(0xFF10B981);
     // নামের প্রথম অক্ষর avatar হিসেবে
     final initials = name.isNotEmpty ? name[0].toUpperCase() : 'U';
 
@@ -79,10 +78,8 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'User Details',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+        title: const Text('User Details',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -98,10 +95,9 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4))
                 ],
               ),
               child: Column(
@@ -110,50 +106,34 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
                   CircleAvatar(
                     radius: 40,
                     backgroundColor: roleColor.withOpacity(0.15),
-                    child: Text(
-                      initials,
-                      style: TextStyle(
-                        color: roleColor,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: Text(initials,
+                        style: TextStyle(
+                            color: roleColor,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text(name,
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  Text(
-                    email,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
+                  Text(email,
+                      style: const TextStyle(
+                          fontSize: 13, color: Color(0xFF6B7280))),
                   const SizedBox(height: 10),
                   // Role badge
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 6,
-                    ),
+                        horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
                       color: roleColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(
-                      role,
-                      style: TextStyle(
-                        color: roleColor,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: Text(role,
+                        style: TextStyle(
+                            color: roleColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),
@@ -172,7 +152,9 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
             ],
 
             // Address section — কোনো address field থাকলে দেখাবে
-            if (house.isNotEmpty || street.isNotEmpty || city.isNotEmpty) ...[
+            if (house.isNotEmpty ||
+                street.isNotEmpty ||
+                city.isNotEmpty) ...[
               _sectionTitle('ADDRESS'),
               const SizedBox(height: 10),
               _infoCard([
@@ -188,7 +170,8 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
                 if (state.isNotEmpty)
                   _infoRow(Icons.map_outlined, 'State', state),
                 if (postal.isNotEmpty)
-                  _infoRow(Icons.markunread_mailbox_outlined, 'Postal', postal),
+                  _infoRow(
+                      Icons.markunread_mailbox_outlined, 'Postal', postal),
                 if (country.isNotEmpty)
                   _infoRow(Icons.flag_outlined, 'Country', country),
               ]),
@@ -203,25 +186,23 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
               _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _complaints.isEmpty
-                  ? Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'No complaints submitted.',
-                          style: TextStyle(color: Color(0xFF6B7280)),
+                      ? Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).cardColor,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Center(
+                            child: Text('No complaints submitted.',
+                                style: TextStyle(color: Color(0xFF6B7280))),
+                          ),
+                        )
+                      // প্রতিটি complaint card হিসেবে দেখানো হচ্ছে
+                      : Column(
+                          children: _complaints
+                              .map((c) => _complaintCard(c))
+                              .toList(),
                         ),
-                      ),
-                    )
-                  // প্রতিটি complaint card হিসেবে দেখানো হচ্ছে
-                  : Column(
-                      children: _complaints
-                          .map((c) => _complaintCard(c))
-                          .toList(),
-                    ),
             ],
           ],
         ),
@@ -230,15 +211,12 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
   }
 
   // Section title widget — বেগুনি রঙে uppercase text
-  Widget _sectionTitle(String title) => Text(
-    title,
-    style: const TextStyle(
-      fontSize: 12,
-      fontWeight: FontWeight.bold,
-      color: Color(0xFF7C3AED),
-      letterSpacing: 0.5,
-    ),
-  );
+  Widget _sectionTitle(String title) => Text(title,
+      style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF7C3AED),
+          letterSpacing: 0.5));
 
   // Info card — একটি white card এ rows দেখায়
   Widget _infoCard(List<Widget> rows) {
@@ -250,10 +228,9 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2))
         ],
       ),
       child: Column(children: rows),
@@ -274,23 +251,16 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Label — ছোট ধূসর text
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF9CA3AF),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF9CA3AF),
+                        fontWeight: FontWeight.w500)),
                 const SizedBox(height: 2),
                 // Value — বড় text
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Text(value,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w500)),
               ],
             ),
           ),
@@ -321,76 +291,60 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // Complaint ID
-              Text(
-                '#${c['complaint_id'] ?? ''}',
-                style: const TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              Text('#${c['complaint_id'] ?? ''}',
+                  style: const TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500)),
               // Status badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4)),
+                child: Text(status,
+                    style: TextStyle(
+                        color: statusColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600)),
               ),
             ],
           ),
           const SizedBox(height: 6),
           // Complaint title
-          Text(
-            c['title'] ?? '',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          ),
+          Text(c['title'] ?? '',
+              style: const TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
-          Row(
-            children: [
-              const Icon(
-                Icons.location_on_outlined,
-                size: 13,
-                color: Color(0xFF6B7280),
-              ),
-              const SizedBox(width: 4),
-              // Location
-              Text(
-                c['location'] ?? '',
-                style: const TextStyle(color: Color(0xFF6B7280), fontSize: 12),
-              ),
-              const Spacer(),
-              // Submit date
-              Text(
-                date,
-                style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 11),
-              ),
-            ],
-          ),
+          Row(children: [
+            const Icon(Icons.location_on_outlined,
+                size: 13, color: Color(0xFF6B7280)),
+            const SizedBox(width: 4),
+            // Location
+            Text(c['location'] ?? '',
+                style: const TextStyle(
+                    color: Color(0xFF6B7280), fontSize: 12)),
+            const Spacer(),
+            // Submit date
+            Text(date,
+                style: const TextStyle(
+                    color: Color(0xFF9CA3AF), fontSize: 11)),
+          ]),
           const SizedBox(height: 4),
           // Category badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: const Color(0xFF7C3AED).withOpacity(0.08),
               borderRadius: BorderRadius.circular(4),
             ),
-            child: Text(
-              c['category'] ?? '',
-              style: const TextStyle(
-                color: Color(0xFF7C3AED),
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: Text(c['category'] ?? '',
+                style: const TextStyle(
+                    color: Color(0xFF7C3AED),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -400,14 +354,10 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
   // Status অনুযায়ী রঙ return করার helper function
   Color _statusColor(String status) {
     switch (status) {
-      case 'In progress':
-        return const Color(0xFFF59E0B);
-      case 'Resolved':
-        return const Color(0xFF059669);
-      case 'Escalated':
-        return const Color(0xFFDC2626);
-      default:
-        return const Color(0xFF3B82F6); // New
+      case 'In progress': return const Color(0xFFF59E0B);
+      case 'Resolved':    return const Color(0xFF059669);
+      case 'Escalated':   return const Color(0xFFDC2626);
+      default:            return const Color(0xFF3B82F6); // New
     }
   }
 
@@ -416,20 +366,8 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
     if (iso == null) return '';
     final dt = DateTime.tryParse(iso);
     if (dt == null) return '';
-    const m = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
+    const m = ['Jan','Feb','Mar','Apr','May','Jun',
+                'Jul','Aug','Sep','Oct','Nov','Dec'];
     return '${m[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
 }

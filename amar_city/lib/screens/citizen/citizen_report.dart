@@ -1,9 +1,7 @@
-// Flutter material design import
 import 'package:flutter/material.dart';
-// Image pick করার জন্য
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
-// Database ও auth service
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/supabase_service.dart';
 
 // CitizenReportScreen — নতুন complaint submit করার screen
@@ -56,9 +54,7 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
     'OTHER':    'Engineering Department',
   };
 
-  // Complaint submit করার function
   Future<void> _submitComplaint() async {
-    // সব required field পূরণ হয়েছে কিনা check
     if (_titleController.text.trim().isEmpty ||
         _descriptionController.text.trim().isEmpty ||
         _locationController.text.trim().isEmpty) {
@@ -73,17 +69,48 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
 
     setState(() => _isLoading = true);
     try {
-      // Supabase complaints table এ নতুন row insert করা হচ্ছে
-      await supabase.from('complaints').insert({
+      final List<String> imageUrls = [];
+      for (int i = 0; i < _selectedImages.length; i++) {
+        final bytes = _imageBytes[i];
+        final fileName =
+            '${AuthService.currentUser!.id}_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
+        await supabase.storage
+            .from('complaint-images')
+            .uploadBinary(
+              fileName,
+              bytes,
+              fileOptions: FileOptions(
+                contentType: 'image/jpeg',
+                upsert: true,
+              ),
+            );
+        final url =
+            'https://oljsrexiazknzdveaqkj.supabase.co/storage/v1/object/public/complaint-images/$fileName';
+        imageUrls.add(url);
+      }
+
+      // Insert complaint first, get back the id
+      final inserted = await supabase.from('complaints').insert({
         'citizen_id': AuthService.currentUser!.id,
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
         'category': _selectedCategory,
         'location': _locationController.text.trim(),
-        'status': 'New', // নতুন complaint এর default status
-        // Category অনুযায়ী department automatically set হচ্ছে
-        'assigned_department': _categoryDepartment[_selectedCategory] ?? 'Engineering Department',
-      });
+        'status': 'New',
+        'assigned_department':
+            _categoryDepartment[_selectedCategory] ?? 'Engineering Department',
+      }).select('id').single();
+
+      debugPrint('Inserted complaint id: ${inserted['id']}');
+      debugPrint('imageUrls to update: $imageUrls');
+
+      // Update image_urls separately if images exist
+      if (imageUrls.isNotEmpty) {
+        await supabase
+            .from('complaints')
+            .update({'image_urls': imageUrls})
+            .eq('id', inserted['id']);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -92,7 +119,6 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
             backgroundColor: Color(0xFF059669),
           ),
         );
-        // Submit হলে আগের screen এ ফিরে যাচ্ছে
         Navigator.of(context).pop();
       }
     } catch (e) {

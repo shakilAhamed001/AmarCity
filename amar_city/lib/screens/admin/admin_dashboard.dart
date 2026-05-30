@@ -24,20 +24,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
       // _selectedTab অনুযায়ী সঠিক screen দেখানো হচ্ছে
       body: IndexedStack(
         index: _selectedTab,
-<<<<<<< HEAD
-        children: const [
-          AdminOverview(),
-          AdminUsers(),
-          AdminComplaints(),
-          AdminProfile(),
-=======
         children: [
           const AdminOverview(),
           const AdminUsers(),
           const AdminComplaints(),
           const NotificationsScreen(viewerRole: 'Admin'),
           const AdminProfile(),
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
         ],
       ),
       // নিচের navigation bar

@@ -1,7 +1,11 @@
+// Flutter material design import
 import 'package:flutter/material.dart';
+// Supabase database connection এর জন্য
 import '../../services/supabase_service.dart';
+// Address edit করতে EditProfileScreen এ navigate করবে
 import 'edit_profile_screen.dart';
 
+// AddressScreen — Citizen এর saved address দেখানোর screen
 class AddressScreen extends StatefulWidget {
   const AddressScreen({Key? key}) : super(key: key);
 
@@ -10,18 +14,23 @@ class AddressScreen extends StatefulWidget {
 }
 
 class _AddressScreenState extends State<AddressScreen> {
+  // Database থেকে আনা address data
   Map<String, dynamic> _address = {};
+  // Data load হচ্ছে কিনা
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    // Screen load হলে address fetch করা হচ্ছে
     _loadAddress();
   }
 
+  // Supabase profiles table থেকে address fields fetch করার function
   Future<void> _loadAddress() async {
     setState(() => _isLoading = true);
     try {
+      // শুধু address related fields আনা হচ্ছে — current user এর জন্য
       final data = await supabase
           .from('profiles')
           .select('house_number, street_name, ward_number, city, state, postal_code, country')
@@ -36,6 +45,8 @@ class _AddressScreenState extends State<AddressScreen> {
     }
   }
 
+  // Address save করা আছে কিনা check করার getter
+  // house_number, street_name বা city এর যেকোনো একটি থাকলে address আছে বলে ধরা হবে
   bool get _hasAddress =>
       (_address['house_number'] ?? '').isNotEmpty ||
       (_address['street_name'] ?? '').isNotEmpty ||
@@ -57,6 +68,7 @@ class _AddressScreenState extends State<AddressScreen> {
             style: TextStyle(
                 color: Colors.black, fontWeight: FontWeight.bold)),
         actions: [
+          // Edit button — EditProfileScreen এ navigate করবে
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: Color(0xFF1E40AF)),
             onPressed: () async {
@@ -64,11 +76,13 @@ class _AddressScreenState extends State<AddressScreen> {
                 MaterialPageRoute(
                     builder: (context) => const EditProfileScreen()),
               );
+              // Edit screen থেকে ফিরে আসলে address reload হবে
               _loadAddress();
             },
           ),
         ],
       ),
+      // Loading হলে spinner, address থাকলে card, না থাকলে empty state
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _hasAddress
@@ -77,6 +91,7 @@ class _AddressScreenState extends State<AddressScreen> {
     );
   }
 
+  // Address card widget — সব address fields দেখায়
   Widget _buildAddressCard() {
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -100,6 +115,7 @@ class _AddressScreenState extends State<AddressScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Card header — home icon ও title
                 Row(
                   children: [
                     Container(
@@ -122,6 +138,8 @@ class _AddressScreenState extends State<AddressScreen> {
                 const SizedBox(height: 20),
                 const Divider(height: 1, color: Color(0xFFE5E7EB)),
                 const SizedBox(height: 20),
+                // প্রতিটি address field row হিসেবে দেখানো হচ্ছে
+                // Database থেকে আনা value, না থাকলে '-' দেখাবে
                 _buildAddressRow(
                     Icons.home_outlined,
                     'House / Apartment',
@@ -154,6 +172,7 @@ class _AddressScreenState extends State<AddressScreen> {
             ),
           ),
           const SizedBox(height: 20),
+          // Edit Address button
           SizedBox(
             width: double.infinity,
             height: 50,
@@ -163,6 +182,7 @@ class _AddressScreenState extends State<AddressScreen> {
                   MaterialPageRoute(
                       builder: (context) => const EditProfileScreen()),
                 );
+                // Edit screen থেকে ফিরে আসলে address reload হবে
                 _loadAddress();
               },
               icon: const Icon(Icons.edit_outlined, color: Colors.white),
@@ -183,6 +203,7 @@ class _AddressScreenState extends State<AddressScreen> {
     );
   }
 
+  // একটি address row widget — icon, label ও value দেখায়
   Widget _buildAddressRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -195,12 +216,14 @@ class _AddressScreenState extends State<AddressScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Label — ছোট ধূসর text
                 Text(label,
                     style: const TextStyle(
                         fontSize: 11,
                         color: Color(0xFF9CA3AF),
                         fontWeight: FontWeight.w500)),
                 const SizedBox(height: 2),
+                // Value — বড় text
                 Text(value,
                     style: const TextStyle(
                         fontSize: 14,
@@ -214,6 +237,7 @@ class _AddressScreenState extends State<AddressScreen> {
     );
   }
 
+  // Empty state widget — address না থাকলে দেখাবে
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -231,12 +255,14 @@ class _AddressScreenState extends State<AddressScreen> {
           const Text('Add your address from Edit Profile',
               style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
           const SizedBox(height: 24),
+          // Add Address button — EditProfileScreen এ navigate করবে
           ElevatedButton.icon(
             onPressed: () async {
               await Navigator.of(context).push(
                 MaterialPageRoute(
                     builder: (context) => const EditProfileScreen()),
               );
+              // Edit screen থেকে ফিরে আসলে address reload হবে
               _loadAddress();
             },
             icon: const Icon(Icons.add, color: Colors.white),

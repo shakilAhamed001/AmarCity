@@ -1,7 +1,11 @@
+// Flutter material design import
 import 'package:flutter/material.dart';
+// Supabase auth এর UserAttributes এর জন্য
 import 'package:supabase_flutter/supabase_flutter.dart';
+// Supabase database ও auth service
 import '../../services/supabase_service.dart';
 
+// EditProfileScreen — Citizen এর profile ও address edit করার screen
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({Key? key}) : super(key: key);
 
@@ -10,8 +14,10 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
+  // Personal info controllers
   late TextEditingController _nameController;
   late TextEditingController _emailController;
+  // Address field controllers
   late TextEditingController _houseController;
   late TextEditingController _streetController;
   late TextEditingController _wardController;
@@ -19,32 +25,41 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _stateController;
   late TextEditingController _postalController;
   late TextEditingController _countryController;
+  // Save loading state
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    // Current user এর info দিয়ে controllers initialize করা হচ্ছে
     final user = AuthService.currentUser;
     _nameController = TextEditingController(
         text: user?.userMetadata?['full_name'] ?? '');
+    // Email read-only — এখানে change করা যাবে না
     _emailController = TextEditingController(text: user?.email ?? '');
+    // Address controllers শুরুতে empty — database থেকে load হবে
     _houseController = TextEditingController();
     _streetController = TextEditingController();
     _wardController = TextEditingController();
     _cityController = TextEditingController();
     _stateController = TextEditingController();
     _postalController = TextEditingController();
+    // Default country Bangladesh
     _countryController = TextEditingController(text: 'Bangladesh');
+    // Database থেকে saved address load করা হচ্ছে
     _loadAddress();
   }
 
+  // Supabase profiles table থেকে address fields load করার function
   Future<void> _loadAddress() async {
     try {
+      // শুধু address related fields আনা হচ্ছে — current user এর জন্য
       final data = await supabase
           .from('profiles')
           .select('house_number, street_name, ward_number, city, state, postal_code, country')
           .eq('id', AuthService.currentUser!.id)
           .single();
+      // Database থেকে আনা data দিয়ে controllers update করা হচ্ছে
       setState(() {
         _houseController.text = data['house_number'] ?? '';
         _streetController.text = data['street_name'] ?? '';
@@ -59,6 +74,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   void dispose() {
+    // Memory leak এড়াতে সব controller dispose করা হচ্ছে
     _nameController.dispose();
     _emailController.dispose();
     _houseController.dispose();
@@ -71,7 +87,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
+  // Profile save করার function
   Future<void> _saveProfile() async {
+    // নাম empty হলে save করা যাবে না
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Name cannot be empty')),
@@ -80,9 +98,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
     setState(() => _isLoading = true);
     try {
+      // Supabase auth metadata তে full_name update করা হচ্ছে
       await supabase.auth.updateUser(
         UserAttributes(data: {'full_name': _nameController.text.trim()}),
       );
+      // profiles table এ নাম ও address update করা হচ্ছে
       await supabase.from('profiles').update({
         'full_name': _nameController.text.trim(),
         'house_number': _houseController.text.trim(),
@@ -98,6 +118,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile updated successfully')),
         );
+        // true return করে জানানো হচ্ছে যে profile update হয়েছে
+        // Parent screen এ এই value দিয়ে UI refresh করা যাবে
         Navigator.of(context).pop(true);
       }
     } catch (e) {
@@ -107,12 +129,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         );
       }
     } finally {
+      // সব ক্ষেত্রে loading বন্ধ করা হচ্ছে
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Avatar এ নামের প্রথম অক্ষর দেখানোর জন্য
     final userName = _nameController.text;
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
@@ -128,6 +152,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             style: TextStyle(
                 color: Colors.black, fontWeight: FontWeight.bold)),
         actions: [
+          // AppBar এ Save button — loading চলাকালীন disable
           TextButton(
             onPressed: _isLoading ? null : _saveProfile,
             child: _isLoading
@@ -149,7 +174,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            // Avatar
+            // Circle avatar — নামের প্রথম অক্ষর দিয়ে
             Center(
               child: CircleAvatar(
                 radius: 50,
@@ -165,9 +190,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             const SizedBox(height: 32),
 
-            // --- Personal Info ---
+            // Personal Info section
             _buildSectionTitle('PERSONAL INFO'),
             const SizedBox(height: 12),
+            // Full name field — editable
             _buildField(
               label: 'FULL NAME',
               controller: _nameController,
@@ -175,6 +201,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               hint: 'Enter your full name',
             ),
             const SizedBox(height: 16),
+            // Email field — read-only, change করা যাবে না
             _buildField(
               label: 'EMAIL ADDRESS',
               controller: _emailController,
@@ -183,12 +210,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               readOnly: true,
             ),
             const SizedBox(height: 4),
+            // Email read-only এর কারণ জানানো হচ্ছে
             const Text('Email cannot be changed here.',
                 style: TextStyle(fontSize: 11, color: Colors.grey)),
 
             const SizedBox(height: 28),
 
-            // --- Address ---
+            // Address section
             _buildSectionTitle('ADDRESS'),
             const SizedBox(height: 12),
             _buildField(
@@ -205,6 +233,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               hint: 'e.g. Mirpur Road',
             ),
             const SizedBox(height: 16),
+            // Ward number — numeric keyboard
             _buildField(
               label: 'WARD NUMBER',
               controller: _wardController,
@@ -213,6 +242,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
+            // City ও State — পাশাপাশি দুটি field
             Row(
               children: [
                 Expanded(
@@ -235,6 +265,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ],
             ),
             const SizedBox(height: 16),
+            // Postal code ও Country — পাশাপাশি দুটি field
             Row(
               children: [
                 Expanded(
@@ -259,7 +290,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
 
             const SizedBox(height: 32),
-            // Save Button
+            // Bottom Save Changes button
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -270,6 +301,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
                 ),
+                // Loading হলে spinner, না হলে text
                 child: _isLoading
                     ? const SizedBox(
                         width: 22,
@@ -290,6 +322,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  // Section title widget — নীল রঙে uppercase text
   Widget _buildSectionTitle(String title) {
     return Text(title,
         style: const TextStyle(
@@ -299,6 +332,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             letterSpacing: 0.5));
   }
 
+  // Reusable form field widget — label, icon, hint ও optional readOnly সহ
   Widget _buildField({
     required String label,
     required TextEditingController controller,
@@ -310,6 +344,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Field label — uppercase ছোট text
         Text(label,
             style: const TextStyle(
                 fontSize: 11,
@@ -327,11 +362,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const TextStyle(color: Color(0xFF999999), fontSize: 13),
             prefixIcon: Icon(icon, color: const Color(0xFF1E40AF), size: 18),
             filled: true,
+            // Read-only field এর background আলাদা রঙ — edit করা যাবে না বোঝাতে
             fillColor:
                 readOnly ? const Color(0xFFEEEEEE) : const Color(0xFFF5F5F5),
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none),
+            // Focus হলে নীল border দেখাবে
             focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(

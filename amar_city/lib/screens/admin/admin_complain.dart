@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/supabase_service.dart';
-<<<<<<< HEAD
-=======
 import '../../services/notification_service.dart';
 import '../complaint_tracking/complaint_detail_screen.dart';
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
 
 class AdminComplaints extends StatefulWidget {
   const AdminComplaints({Key? key}) : super(key: key);
@@ -43,21 +40,10 @@ class _AdminComplaintsState extends State<AdminComplaints> {
           .from('complaints')
           .select()
           .order('created_at', ascending: false);
-<<<<<<< HEAD
-
-      final list = <Map<String, dynamic>>[];
-      for (final item in (data as List)) {
-        list.add(Map<String, dynamic>.from(item as Map));
-      }
-
-      setState(() {
-        _allComplaints = list;
-=======
       setState(() {
         _allComplaints = (data as List)
             .map((e) => Map<String, dynamic>.from(e as Map))
             .toList();
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
         _isLoading = false;
       });
     } catch (e) {
@@ -76,16 +62,9 @@ class _AdminComplaintsState extends State<AdminComplaints> {
   Future<void> _fetchOfficers() async {
     try {
       final data = await supabase.from('profiles').select();
-<<<<<<< HEAD
-      final all = <Map<String, dynamic>>[];
-      for (final item in (data as List)) {
-        all.add(Map<String, dynamic>.from(item as Map));
-      }
-=======
       final all = (data as List)
           .map((e) => Map<String, dynamic>.from(e as Map))
           .toList();
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
       setState(() {
         _allOfficers = all
             .where(
@@ -148,19 +127,14 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                 onPressed: () async {
                   if (selectedOfficerId == null) return;
                   try {
-<<<<<<< HEAD
-=======
                     final complaintId = complaint['id'].toString();
                     final complaintTitle =
                         complaint['title']?.toString() ?? 'Complaint';
 
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
                     await supabase
                         .from('complaints')
                         .update({'assigned_officer_id': selectedOfficerId})
                         .eq('id', complaint['id']);
-<<<<<<< HEAD
-=======
 
                     // Notify assigned officer
                     await NotificationService.send(
@@ -192,7 +166,6 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                       updatedBy: 'admin',
                     );
 
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
                     final idx = _allComplaints.indexWhere(
                       (c) => c['id'] == complaint['id'],
                     );
@@ -206,11 +179,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-<<<<<<< HEAD
-                          content: Text('Officer assigned!'),
-=======
                           content: Text('Officer assigned & notified!'),
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
                           backgroundColor: Color(0xFF059669),
                         ),
                       );
@@ -348,10 +317,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
   }
 
   Widget _buildStatusFilters() {
-    final filters = ['All', 'New', 'In progress', 'Escalated', 'Resolved'];
-=======
     final filters = ['All', 'New', 'In progress', 'Resolved'];
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -452,189 +418,6 @@ class _AdminComplaintsState extends State<AdminComplaints> {
               .toString()
         : '';
 
-<<<<<<< HEAD
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: _categoryColor(category).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  _categoryIcon(category),
-                  color: _categoryColor(category),
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          category,
-                          style: const TextStyle(
-                            color: Color(0xFF6B7280),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            status,
-                            style: TextStyle(
-                              color: statusColor,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Color(0xFF1F2937),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              const Icon(
-                Icons.location_on_outlined,
-                size: 13,
-                color: Color(0xFF6B7280),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  location,
-                  style: const TextStyle(
-                    color: Color(0xFF6B7280),
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              Text(
-                date,
-                style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 11),
-              ),
-            ],
-          ),
-          if (dept.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF7C3AED).withOpacity(0.08),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                dept,
-                style: const TextStyle(
-                  color: Color(0xFF7C3AED),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (officerName.isNotEmpty)
-                Expanded(
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.person_outline,
-                        size: 13,
-                        color: Color(0xFF059669),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          officerName,
-                          style: const TextStyle(
-                            color: Color(0xFF059669),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                const Text(
-                  'Unassigned',
-                  style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 11),
-                ),
-              GestureDetector(
-                onTap: () => _showAssignDialog(c),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isAssigned
-                        ? const Color(0xFFDCFCE7)
-                        : const Color(0xFFEDE9FE),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    isAssigned ? 'Reassign >' : 'Assign >',
-                    style: TextStyle(
-                      color: isAssigned
-                          ? const Color(0xFF059669)
-                          : const Color(0xFF7C3AED),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-=======
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
@@ -827,7 +610,6 @@ class _AdminComplaintsState extends State<AdminComplaints> {
             ),
           ],
         ),
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
       ),
     );
   }

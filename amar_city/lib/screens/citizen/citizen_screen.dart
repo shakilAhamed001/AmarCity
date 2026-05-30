@@ -1,10 +1,9 @@
-// Flutter material design import
 import 'package:flutter/material.dart';
-// Auth ও database service
 import '../../services/supabase_service.dart';
-// Profile ও report screen
 import 'citizen_profile.dart';
 import 'citizen_report.dart';
+import '../complaint_tracking/complaint_detail_screen.dart';
+import '../notifications/notifications_screen.dart';
 
 // CitizenScreen — Citizen এর main home screen
 class CitizenScreen extends StatefulWidget {
@@ -55,7 +54,9 @@ class _CitizenScreenState extends State<CitizenScreen> {
           .eq('citizen_id', AuthService.currentUser!.id)
           .order('created_at', ascending: false);
 
-      final list = List<Map<String, dynamic>>.from(data);
+      final list = (data as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
       setState(() {
         _allComplaints = list;
         // Stats calculate করা হচ্ছে
@@ -86,34 +87,32 @@ class _CitizenScreenState extends State<CitizenScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cardColor = theme.cardColor;
-    final textPrimary = theme.colorScheme.onSurface;
-    final textSecondary = theme.colorScheme.onSurface.withOpacity(0.6);
-    final bgColor = theme.scaffoldBackgroundColor;
+    // Show notifications screen when tab 2 is selected
+    if (_selectedIndex == 2) {
+      return NotificationsScreen(
+        viewerRole: 'Citizen',
+        onBack: () => setState(() => _selectedIndex = 0),
+      );
+    }
+
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
     return Scaffold(
       backgroundColor: bgColor,
       body: RefreshIndicator(
-        // নিচে টেনে refresh করলে complaints আবার fetch হবে
         onRefresh: _fetchComplaints,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
-              // উপরের gradient header — stats সহ
               _buildHeader(),
-              // Quick action buttons
               _buildQuickActions(),
-              // সবচেয়ে নতুন ২টি complaint
               _buildRecentComplaints(),
-              // Filter করা complaint list
               _buildMyComplaintsSection(),
               const SizedBox(height: 20),
             ],
           ),
         ),
       ),
-      // নিচের navigation bar
       bottomNavigationBar: _buildBottomNavigation(),
     );
   }
@@ -399,7 +398,6 @@ class _CitizenScreenState extends State<CitizenScreen> {
     );
   }
 
-  // একটি complaint card widget — compact version
   Widget _buildComplaintCard(Map<String, dynamic> c) {
     final theme = Theme.of(context);
     final cardColor = theme.cardColor;
@@ -410,48 +408,78 @@ class _CitizenScreenState extends State<CitizenScreen> {
     final icon = _categoryIcon(c['category'] ?? 'OTHER');
     final iconColor = _categoryColor(c['category'] ?? 'OTHER');
     final date = _formatDate(c['created_at']);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))
-        ],
-      ),
-      child: Row(
-        children: [
-          // Category icon
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(color: iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Complaint title
-                Text(c['title'] ?? '', style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 4),
-                Row(children: [
-                  // Location
-                  Text(c['location'] ?? '', style: TextStyle(color: textSecondary, fontSize: 12)),
-                  Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text('•', style: TextStyle(color: textSecondary))),
-                  // Date
-                  Text(date, style: TextStyle(color: textSecondary, fontSize: 12)),
-                ]),
-              ],
+    return GestureDetector(
+      onTap: () => Navigator.of(context)
+          .push(MaterialPageRoute(
+            builder: (_) => ComplaintDetailScreen(
+              complaint: c,
+              viewerRole: 'Citizen',
             ),
-          ),
-          // Status badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-            child: Text(status, style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.w600)),
-          ),
-        ],
+          ))
+          .then((_) => _fetchComplaints()),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2))
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8)),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(c['title'] ?? '',
+                      style: TextStyle(
+                          color: textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    Text(c['location'] ?? '',
+                        style: TextStyle(
+                            color: textSecondary, fontSize: 12)),
+                    Padding(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text('•',
+                            style: TextStyle(color: textSecondary))),
+                    Text(date,
+                        style: TextStyle(
+                            color: textSecondary, fontSize: 12)),
+                  ]),
+                ],
+              ),
+            ),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6)),
+              child: Text(status,
+                  style: TextStyle(
+                      color: statusColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -526,7 +554,6 @@ class _CitizenScreenState extends State<CitizenScreen> {
     );
   }
 
-  // My complaints section এর একটি complaint item — detailed version
   Widget _buildMyComplaintItem(Map<String, dynamic> c) {
     final theme = Theme.of(context);
     final cardColor = theme.cardColor;
@@ -538,68 +565,106 @@ class _CitizenScreenState extends State<CitizenScreen> {
     final icon = _categoryIcon(c['category'] ?? 'OTHER');
     final iconColor = _categoryColor(c['category'] ?? 'OTHER');
     final date = _formatDate(c['created_at']);
-    // Assigned officer এর নাম — না থাকলে 'Unassigned'
     final officer = c['assigned_officer_name'] ?? 'Unassigned';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Category icon
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(color: iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Complaint ID
-                    Text('#${c['complaint_id'] ?? ''}', style: TextStyle(color: textSecondary, fontSize: 11, fontWeight: FontWeight.w500)),
-                    // Status badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                      child: Text(status, style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.w600)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                // Complaint title
-                Text(c['title'] ?? '', style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 4),
-                // Location
-                Row(children: [
-                  Icon(Icons.location_on_outlined, size: 14, color: textSecondary),
-                  const SizedBox(width: 4),
-                  Text(c['location'] ?? '', style: TextStyle(color: textSecondary, fontSize: 12)),
-                ]),
-                const SizedBox(height: 4),
-                // Date ও assigned officer
-                Row(children: [
-                  Text(date, style: TextStyle(color: textMuted, fontSize: 11)),
-                  Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text('•', style: TextStyle(color: textMuted, fontSize: 11))),
-                  Expanded(child: Text('Officer: $officer', style: TextStyle(color: textMuted, fontSize: 11), overflow: TextOverflow.ellipsis)),
-                ]),
-              ],
+    return GestureDetector(
+      onTap: () => Navigator.of(context)
+          .push(MaterialPageRoute(
+            builder: (_) => ComplaintDetailScreen(
+              complaint: c,
+              viewerRole: 'Citizen',
             ),
-          ),
-        ],
+          ))
+          .then((_) => _fetchComplaints()),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2))
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8)),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('#${c['complaint_id'] ?? ''}',
+                          style: TextStyle(
+                              color: textSecondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4)),
+                        child: Text(status,
+                            style: TextStyle(
+                                color: statusColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(c['title'] ?? '',
+                      style: TextStyle(
+                          color: textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    Icon(Icons.location_on_outlined,
+                        size: 14, color: textSecondary),
+                    const SizedBox(width: 4),
+                    Text(c['location'] ?? '',
+                        style: TextStyle(
+                            color: textSecondary, fontSize: 12)),
+                  ]),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    Text(date,
+                        style:
+                            TextStyle(color: textMuted, fontSize: 11)),
+                    Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text('•',
+                            style: TextStyle(
+                                color: textMuted, fontSize: 11))),
+                    Expanded(
+                        child: Text('Officer: $officer',
+                            style: TextStyle(
+                                color: textMuted, fontSize: 11),
+                            overflow: TextOverflow.ellipsis)),
+                  ]),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // Bottom navigation bar widget
   Widget _buildBottomNavigation() {
     return Container(
       decoration: BoxDecoration(
@@ -614,13 +679,13 @@ class _CitizenScreenState extends State<CitizenScreen> {
       child: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {
-          // Report tab — CitizenReportScreen এ navigate করবে
           if (index == 1) {
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (context) => const CitizenReportScreen())).then((_) => _fetchComplaints());
+            Navigator.of(context)
+                .push(MaterialPageRoute(
+                    builder: (context) => const CitizenReportScreen()))
+                .then((_) => _fetchComplaints());
             return;
           }
-          // Profile tab — CitizenProfileScreen এ navigate করবে
           if (index == 3) {
             Navigator.of(context).push(MaterialPageRoute(
                 builder: (context) => const CitizenProfileScreen()));
@@ -644,9 +709,9 @@ class _CitizenScreenState extends State<CitizenScreen> {
               label: 'Report'),
           BottomNavigationBarItem(
               icon: Icon(_selectedIndex == 2
-                  ? Icons.format_list_bulleted
-                  : Icons.format_list_bulleted_outlined),
-              label: 'My issues'),
+                  ? Icons.notifications
+                  : Icons.notifications_outlined),
+              label: 'Notifications'),
           BottomNavigationBarItem(
               icon: Icon(
                   _selectedIndex == 3 ? Icons.person : Icons.person_outline),

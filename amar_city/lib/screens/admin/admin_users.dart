@@ -1,11 +1,11 @@
+// Flutter material design import
 import 'package:flutter/material.dart';
+// Supabase database connection এর জন্য
 import '../../services/supabase_service.dart';
-<<<<<<< HEAD
-=======
 // User detail screen — tap করলে এখানে navigate করবে
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
 import 'admin_user_detail_screen.dart';
 
+// AdminUsers — Admin এর user management screen
 class AdminUsers extends StatefulWidget {
   const AdminUsers({Key? key}) : super(key: key);
 
@@ -14,36 +14,27 @@ class AdminUsers extends StatefulWidget {
 }
 
 class _AdminUsersState extends State<AdminUsers> {
-<<<<<<< HEAD
-  String _selectedFilter = 'All';
-  String _searchQuery = '';
-=======
   // Role filter — শুরুতে সব user দেখাবে
   String _selectedFilter = 'All';
   // Search query — নাম বা email দিয়ে খোঁজার জন্য
   String _searchQuery = '';
   // Database থেকে আনা সব user
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
   List<Map<String, dynamic>> _allUsers = [];
+  // Data load হচ্ছে কিনা
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-<<<<<<< HEAD
-=======
     // Screen load হলে users fetch করা হচ্ছে
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
     _fetchUsers();
   }
 
+  // Supabase profiles table থেকে সব user fetch করার function
   Future<void> _fetchUsers() async {
     setState(() => _isLoading = true);
     try {
-<<<<<<< HEAD
-=======
       // profiles table থেকে সব data আনা হচ্ছে, নতুন আগে
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
       final data = await supabase
           .from('profiles')
           .select()
@@ -59,23 +50,16 @@ class _AdminUsersState extends State<AdminUsers> {
     }
   }
 
-<<<<<<< HEAD
-=======
   // Filter ও search অনুযায়ী user list return করে
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
   List<Map<String, dynamic>> get _filteredUsers {
     return _allUsers.where((u) {
       final name = (u['full_name'] ?? '').toString().toLowerCase();
       final email = (u['email'] ?? '').toString().toLowerCase();
       final role = (u['role'] ?? '').toString();
       final query = _searchQuery.toLowerCase();
-<<<<<<< HEAD
-      final matchesSearch = name.contains(query) || email.contains(query);
-=======
       // নাম বা email এ search query আছে কিনা check
       final matchesSearch = name.contains(query) || email.contains(query);
       // Role filter match করা হচ্ছে
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
       final matchesFilter =
           _selectedFilter == 'All' ||
           role.toLowerCase() == _selectedFilter.toLowerCase();
@@ -83,10 +67,7 @@ class _AdminUsersState extends State<AdminUsers> {
     }).toList();
   }
 
-<<<<<<< HEAD
-=======
   // নির্দিষ্ট role এর user সংখ্যা count করার helper
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
   int _countByRole(String role) =>
       _allUsers.where((u) => (u['role'] ?? '') == role).length;
 
@@ -96,17 +77,11 @@ class _AdminUsersState extends State<AdminUsers> {
       backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
         children: [
-<<<<<<< HEAD
-          _buildHeader(),
-          Expanded(
-            child: RefreshIndicator(
-=======
           // উপরের gradient header — stats সহ
           _buildHeader(),
           Expanded(
             child: RefreshIndicator(
               // নিচে টেনে refresh করলে users আবার fetch হবে
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
               onRefresh: _fetchUsers,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -116,12 +91,6 @@ class _AdminUsersState extends State<AdminUsers> {
                 ),
                 child: Column(
                   children: [
-<<<<<<< HEAD
-                    _buildFilters(),
-                    const SizedBox(height: 16),
-                    _buildSearchField(),
-                    const SizedBox(height: 16),
-=======
                     // Role filter chips
                     _buildFilters(),
                     const SizedBox(height: 16),
@@ -129,7 +98,6 @@ class _AdminUsersState extends State<AdminUsers> {
                     _buildSearchField(),
                     const SizedBox(height: 16),
                     // Loading, empty বা user list দেখানো হচ্ছে
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
                     _isLoading
                         ? const Center(child: CircularProgressIndicator())
                         : _filteredUsers.isEmpty
@@ -152,6 +120,7 @@ class _AdminUsersState extends State<AdminUsers> {
     );
   }
 
+  // Header widget — gradient background, total count ও role stats
   Widget _buildHeader() {
     return Container(
       decoration: const BoxDecoration(
@@ -178,10 +147,7 @@ class _AdminUsersState extends State<AdminUsers> {
             ),
           ),
           const SizedBox(height: 4),
-<<<<<<< HEAD
-=======
           // মোট user সংখ্যা dynamically দেখানো হচ্ছে
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
           Text(
             '${_allUsers.length} total users',
             style: const TextStyle(color: Colors.white70, fontSize: 13),
@@ -189,20 +155,14 @@ class _AdminUsersState extends State<AdminUsers> {
           const SizedBox(height: 16),
           Row(
             children: [
-<<<<<<< HEAD
-=======
               // Citizen count stat
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
               _headerStat(
                 '${_countByRole('Citizen')}',
                 'Citizens',
                 const Color(0xFF10B981),
               ),
               const SizedBox(width: 12),
-<<<<<<< HEAD
-=======
               // Officer count stat
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
               _headerStat(
                 '${_countByRole('Officer')}',
                 'Officers',
@@ -215,10 +175,7 @@ class _AdminUsersState extends State<AdminUsers> {
     );
   }
 
-<<<<<<< HEAD
-=======
   // Header এর একটি stat badge widget — count ও label দেখায়
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
   Widget _headerStat(String count, String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -247,6 +204,7 @@ class _AdminUsersState extends State<AdminUsers> {
     );
   }
 
+  // Role filter chips — All, Citizen, Officer
   Widget _buildFilters() {
     final filters = ['All', 'Citizen', 'Officer'];
     return Row(
@@ -255,6 +213,7 @@ class _AdminUsersState extends State<AdminUsers> {
         return Padding(
           padding: const EdgeInsets.only(right: 10),
           child: GestureDetector(
+            // tap করলে filter পরিবর্তন হবে
             onTap: () => setState(() => _selectedFilter = f),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -285,10 +244,7 @@ class _AdminUsersState extends State<AdminUsers> {
     );
   }
 
-<<<<<<< HEAD
-=======
   // Search field widget — নাম বা email দিয়ে user খোঁজা যাবে
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
   Widget _buildSearchField() {
     return Container(
       decoration: BoxDecoration(
@@ -309,10 +265,7 @@ class _AdminUsersState extends State<AdminUsers> {
     );
   }
 
-<<<<<<< HEAD
-=======
   // Filtered user list — প্রতিটি user একটি card হিসেবে দেখানো হচ্ছে
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
   Widget _buildUserList() {
     return Column(
       children: _filteredUsers.map((u) {
@@ -320,22 +273,15 @@ class _AdminUsersState extends State<AdminUsers> {
         final email = (u['email'] ?? '').toString();
         final role = (u['role'] ?? 'Citizen').toString();
         final department = (u['department'] ?? '').toString();
-<<<<<<< HEAD
-        final initials = name.isNotEmpty ? name[0].toUpperCase() : 'U';
-=======
         // নামের প্রথম অক্ষর avatar হিসেবে
         final initials = name.isNotEmpty ? name[0].toUpperCase() : 'U';
         // Officer হলে নীল, Citizen হলে সবুজ
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
         final roleColor = role == 'Officer'
             ? const Color(0xFF3B82F6)
             : const Color(0xFF10B981);
 
         return GestureDetector(
-<<<<<<< HEAD
-=======
           // tap করলে user detail screen এ navigate করবে
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => AdminUserDetailScreen(user: u),
@@ -351,10 +297,7 @@ class _AdminUsersState extends State<AdminUsers> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-<<<<<<< HEAD
-=======
                 // Avatar — নামের প্রথম অক্ষর দিয়ে
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
                 Container(
                   width: 48,
                   height: 48,
@@ -378,10 +321,7 @@ class _AdminUsersState extends State<AdminUsers> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-<<<<<<< HEAD
-=======
                       // User এর নাম
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
                       Text(
                         name,
                         style: const TextStyle(
@@ -390,10 +330,7 @@ class _AdminUsersState extends State<AdminUsers> {
                         ),
                       ),
                       const SizedBox(height: 3),
-<<<<<<< HEAD
-=======
                       // User এর email
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
                       Text(
                         email,
                         style: const TextStyle(
@@ -401,10 +338,7 @@ class _AdminUsersState extends State<AdminUsers> {
                           fontSize: 12,
                         ),
                       ),
-<<<<<<< HEAD
-=======
                       // Department — শুধু Officer এর জন্য দেখাবে
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
                       if (department.isNotEmpty) ...[
                         const SizedBox(height: 3),
                         Text(
@@ -416,10 +350,7 @@ class _AdminUsersState extends State<AdminUsers> {
                         ),
                       ],
                       const SizedBox(height: 6),
-<<<<<<< HEAD
-=======
                       // Role badge
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -441,10 +372,7 @@ class _AdminUsersState extends State<AdminUsers> {
                     ],
                   ),
                 ),
-<<<<<<< HEAD
-=======
                 // Arrow icon — detail screen এ যাওয়ার ইঙ্গিত
->>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
                 const Icon(
                   Icons.chevron_right,
                   color: Color(0xFFD1D5DB),
