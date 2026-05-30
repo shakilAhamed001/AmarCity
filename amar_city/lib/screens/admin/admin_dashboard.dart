@@ -1,10 +1,9 @@
-// Flutter material design import
 import 'package:flutter/material.dart';
-// Admin panel এর সব tab screen import
 import 'admin_overview.dart';
 import 'admin_users.dart';
 import 'admin_complain.dart';
 import 'admin_profile.dart';
+import '../notifications/notifications_screen.dart';
 
 // AdminDashboard — Admin এর main screen, bottom navigation সহ
 class AdminDashboard extends StatefulWidget {
@@ -25,11 +24,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
       // _selectedTab অনুযায়ী সঠিক screen দেখানো হচ্ছে
       body: IndexedStack(
         index: _selectedTab,
+<<<<<<< HEAD
         children: const [
           AdminOverview(),
           AdminUsers(),
           AdminComplaints(),
           AdminProfile(),
+=======
+        children: [
+          const AdminOverview(),
+          const AdminUsers(),
+          const AdminComplaints(),
+          const NotificationsScreen(viewerRole: 'Admin'),
+          const AdminProfile(),
+>>>>>>> 26b91385e69d11130a8cc0e3a81a79cac6610770
         ],
       ),
       // নিচের navigation bar
@@ -57,26 +65,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(
-                icon: Icons.dashboard_outlined,
-                label: 'Overview',
-                index: 0,
-              ),
-              _buildNavItem(
-                icon: Icons.people_outline,
-                label: 'Users',
-                index: 1,
-              ),
-              _buildNavItem(
-                icon: Icons.assignment_outlined,
-                label: 'Complaints',
-                index: 2,
-              ),
-              _buildNavItem(
-                icon: Icons.account_circle_outlined,
-                label: 'Profile',
-                index: 3,
-              ),
+              _buildNavItem(icon: Icons.dashboard_outlined, label: 'Overview', index: 0),
+              _buildNavItem(icon: Icons.people_outline, label: 'Users', index: 1),
+              _buildNavItem(icon: Icons.assignment_outlined, label: 'Complaints', index: 2),
+              _buildNavItem(icon: Icons.notifications_outlined, label: 'Alerts', index: 3),
+              _buildNavItem(icon: Icons.account_circle_outlined, label: 'Profile', index: 4),
             ],
           ),
         ),
