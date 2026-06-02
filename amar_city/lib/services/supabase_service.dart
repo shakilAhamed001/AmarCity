@@ -9,25 +9,24 @@ final supabase = Supabase.instance.client;
 
 // AuthService — সব authentication related কাজ এখানে
 class AuthService {
-  // নতুন account তৈরি করার function
   static Future<AuthResponse> signUp({
     required String email,
     required String password,
     required String name,
-    required String role, // 'Citizen', 'Officer', বা 'Admin'
-    String? department, // শুধু Officer এর জন্য
+    required String role,
+    String? department,
   }) async {
     final response = await supabase.auth.signUp(
       email: email,
       password: password,
-      // extra user info metadata হিসেবে save হয়
       data: {
         'full_name': name,
         'role': role,
-        // department শুধু তখনই পাঠানো হবে যখন null না
         if (department != null) 'department': department,
       },
+      emailRedirectTo: null,
     );
+    // profiles table এ insert এখন Supabase trigger করে দেবে automatically
     return response;
   }
 

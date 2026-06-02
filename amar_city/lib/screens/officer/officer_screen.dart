@@ -4,6 +4,7 @@ import '../complaint_tracking/complaint_detail_screen.dart';
 import '../notifications/notifications_screen.dart';
 import 'officer_profile.dart';
 
+// OfficerScreen — Officer এর main home screen
 class OfficerScreen extends StatefulWidget {
   const OfficerScreen({Key? key}) : super(key: key);
 
@@ -12,13 +13,18 @@ class OfficerScreen extends StatefulWidget {
 }
 
 class _OfficerScreenState extends State<OfficerScreen> {
+  // Bottom navigation এর selected index
   int _selectedIndex = 0;
+  // Login করা officer এর নাম ও department
   String _userName = 'Officer';
   String _department = '';
 
+  // Database থেকে আনা assigned tasks (complaints)
   List<Map<String, dynamic>> _tasks = [];
+  // Data load হচ্ছে কিনা
   bool _isLoading = true;
 
+  // Header এ দেখানোর জন্য stats
   int _assignedCount = 0;
   int _inProgressCount = 0;
   int _doneCount = 0;
@@ -26,9 +32,11 @@ class _OfficerScreenState extends State<OfficerScreen> {
   @override
   void initState() {
     super.initState();
+    // User info load করে তারপর tasks fetch করা হচ্ছে
     _loadUserAndFetch();
   }
 
+  // User info load করে tasks fetch করার combined function
   Future<void> _loadUserAndFetch() async {
     final user = AuthService.currentUser;
     if (user != null) {
@@ -40,6 +48,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
     await _fetchTasks();
   }
 
+  // শুধু user info reload করার function — profile update এর পরে call হয়
   void _loadUser() {
     final user = AuthService.currentUser;
     if (user != null) {
@@ -50,9 +59,11 @@ class _OfficerScreenState extends State<OfficerScreen> {
     }
   }
 
+  // Supabase থেকে এই officer কে assigned complaints fetch করার function
   Future<void> _fetchTasks() async {
     setState(() => _isLoading = true);
     try {
+      // শুধু এই officer কে assigned complaints আনা হচ্ছে
       final cData = await supabase
           .from('complaints')
           .select()
@@ -62,6 +73,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
 
       setState(() {
         _tasks = complaints;
+        // Stats calculate করা হচ্ছে
         _assignedCount = complaints
             .where((c) => c['status'] == 'New' || c['status'] == 'In progress')
             .length;
@@ -82,7 +94,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Show notifications screen when tab 2 is selected
+    // Notifications tab selected হলে notifications screen দেখাবে
     if (_selectedIndex == 2) {
       return Scaffold(
         body: NotificationsScreen(
@@ -96,6 +108,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: RefreshIndicator(
+        // Pull to refresh — tasks আবার fetch হবে
         onRefresh: _fetchTasks,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -113,6 +126,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
     );
   }
 
+  // Header widget — gradient background, department badge, officer নাম
   Widget _buildHeader() {
     return Container(
       decoration: const BoxDecoration(
@@ -137,6 +151,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Department badge — department থাকলে দেখাবে
                   if (_department.isNotEmpty)
                     Container(
                       margin: const EdgeInsets.only(bottom: 6),
@@ -159,6 +174,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
                           fontSize: 14,
                           fontWeight: FontWeight.w400)),
                   const SizedBox(height: 4),
+                  // Officer এর নাম dynamically দেখানো হচ্ছে
                   Text(_userName,
                       style: const TextStyle(
                           color: Colors.white,
@@ -166,6 +182,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
                           fontWeight: FontWeight.bold)),
                 ],
               ),
+              // Profile icon — tap করলে profile screen এ যাবে
               Container(
                 width: 44,
                 height: 44,
@@ -180,6 +197,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
                     await Navigator.of(context).push(MaterialPageRoute(
                       builder: (context) => const OfficerProfileScreen(),
                     ));
+                    // Profile screen থেকে ফিরে আসলে user info reload হবে
                     _loadUser();
                   },
                 ),
@@ -192,6 +210,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
     );
   }
 
+  // Statistics cards — Assigned, In Progress, Resolved count দেখায়
   Widget _buildStatisticsCards() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -208,6 +227,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
     );
   }
 
+  // একটি stat card widget — number, label ও color নিয়ে তৈরি
   Widget _buildStatCard(String number, String label, Color color) {
     final cardColor = Theme.of(context).cardColor;
     final textSecondary =
@@ -228,12 +248,14 @@ class _OfficerScreenState extends State<OfficerScreen> {
         ),
         child: Column(
           children: [
+            // বড় সংখ্যা — color দিয়ে
             Text(number,
                 style: TextStyle(
                     color: color,
                     fontSize: 28,
                     fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
+            // Label
             Text(label,
                 style: TextStyle(
                     color: textSecondary,
@@ -245,6 +267,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
     );
   }
 
+  // My Tasks section — assigned complaint list দেখায়
   Widget _buildMyTasks() {
     final textSecondary =
         Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
@@ -260,6 +283,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5)),
           const SizedBox(height: 12),
+          // Loading, empty বা task list দেখানো হচ্ছে
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
           else if (_tasks.isEmpty)
@@ -281,6 +305,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
     );
   }
 
+  // একটি task card widget — complaint info দেখায়
   Widget _buildTaskCard(Map<String, dynamic> task) {
     final cardColor = Theme.of(context).cardColor;
     final textPrimary = Theme.of(context).colorScheme.onSurface;
@@ -291,15 +316,17 @@ class _OfficerScreenState extends State<OfficerScreen> {
     final category = task['category'] ?? 'OTHER';
     final icon = _categoryIcon(category);
     final iconColor = _categoryColor(category);
+    // citizen_id থাকলে এটি citizen complaint
     final isComplaint = task.containsKey('citizen_id');
 
     return GestureDetector(
+      // Tap করলে complaint detail screen এ navigate করবে
       onTap: () => Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => ComplaintDetailScreen(
           complaint: task,
           viewerRole: 'Officer',
         ),
-      )).then((_) => _fetchTasks()),
+      )).then((_) => _fetchTasks()), // ফিরে আসলে tasks refresh হবে
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
@@ -315,6 +342,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Category icon container
             Container(
               width: 44,
               height: 44,
@@ -329,17 +357,20 @@ class _OfficerScreenState extends State<OfficerScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Complaint ID — citizen complaint হলে দেখাবে
                   if (isComplaint)
                     Text('#${task['complaint_id'] ?? ''}',
                         style: TextStyle(
                             color: textSecondary,
                             fontSize: 11,
                             fontWeight: FontWeight.w500)),
+                  // Task title
                   Text(task['title'] ?? '',
                       style: TextStyle(
                           color: textPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.w600)),
+                  // Location — থাকলে দেখাবে
                   if ((task['location'] ?? '').isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Row(
@@ -356,6 +387,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
                       ],
                     ),
                   ],
+                  // 'Citizen Complaint' badge — citizen complaint হলে দেখাবে
                   if (isComplaint) ...[
                     const SizedBox(height: 4),
                     Container(
@@ -376,6 +408,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
               ),
             ),
             const SizedBox(width: 8),
+            // Status badge
             Container(
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -395,6 +428,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
     );
   }
 
+  // Bottom navigation bar widget
   Widget _buildBottomNavigation() {
     final cardColor = Theme.of(context).cardColor;
     return Container(
@@ -438,6 +472,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
     );
   }
 
+  // Status অনুযায়ী রঙ return করার helper
   Color _statusColor(String status) {
     switch (status) {
       case 'Urgent':
@@ -451,6 +486,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
     }
   }
 
+  // Category অনুযায়ী icon return করার helper
   IconData _categoryIcon(String category) {
     switch (category) {
       case 'ROAD':
@@ -470,6 +506,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
     }
   }
 
+  // Category অনুযায়ী রঙ return করার helper
   Color _categoryColor(String category) {
     switch (category) {
       case 'ROAD':

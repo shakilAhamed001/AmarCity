@@ -89,98 +89,178 @@ class _SplashScreenState extends State<SplashScreen>
       const Color(0xFFAFA9EC),
     ];
     for (int i = 0; i < 18; i++) {
-      _particles.add(_ParticleData(
-        x: _rng.nextDouble(),
-        size: _rng.nextDouble() * 5 + 2,
-        color: colors[_rng.nextInt(colors.length)],
-      ));
+      _particles.add(
+        _ParticleData(
+          x: _rng.nextDouble(),
+          size: _rng.nextDouble() * 5 + 2,
+          color: colors[_rng.nextInt(colors.length)],
+        ),
+      );
     }
   }
 
   void _buildStars() {
     for (int i = 0; i < 60; i++) {
-      _stars.add(_StarData(
-        x: _rng.nextDouble(),
-        y: _rng.nextDouble() * 0.7,
-        size: _rng.nextDouble() * 2.0 + 0.5,
-        phase: _rng.nextDouble(),
-      ));
+      _stars.add(
+        _StarData(
+          x: _rng.nextDouble(),
+          y: _rng.nextDouble() * 0.7,
+          size: _rng.nextDouble() * 2.0 + 0.5,
+          phase: _rng.nextDouble(),
+        ),
+      );
     }
   }
 
   void _buildBirds() {
     for (int i = 0; i < 6; i++) {
-      _birds.add(_BirdData(
-        startX: -0.1 - _rng.nextDouble() * 0.4,
-        y: 0.42 + _rng.nextDouble() * 0.12,
-        speed: 0.06 + _rng.nextDouble() * 0.08,
-        scale: 0.6 + _rng.nextDouble() * 0.6,
-        phase: _rng.nextDouble(),
-      ));
+      _birds.add(
+        _BirdData(
+          startX: -0.1 - _rng.nextDouble() * 0.4,
+          y: 0.42 + _rng.nextDouble() * 0.12,
+          speed: 0.06 + _rng.nextDouble() * 0.08,
+          scale: 0.6 + _rng.nextDouble() * 0.6,
+          phase: _rng.nextDouble(),
+        ),
+      );
     }
   }
 
   void _setupAnimations() {
-    _iconCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+    _iconCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
 
     _iconScale = TweenSequence([
-      TweenSequenceItem(tween: Tween(begin: 0.3, end: 1.15).chain(CurveTween(curve: Curves.easeOut)), weight: 70),
-      TweenSequenceItem(tween: Tween(begin: 1.15, end: 1.0).chain(CurveTween(curve: Curves.easeIn)), weight: 30),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 0.3,
+          end: 1.15,
+        ).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 70,
+      ),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 1.15,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
+        weight: 30,
+      ),
     ]).animate(_iconCtrl);
 
-    _iconRotate = Tween(begin: -0.26, end: 0.0)
-        .animate(CurvedAnimation(parent: _iconCtrl, curve: Curves.easeOut));
+    _iconRotate = Tween(
+      begin: -0.26,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _iconCtrl, curve: Curves.easeOut));
 
     _iconOpacity = Tween(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _iconCtrl, curve: const Interval(0.0, 0.4, curve: Curves.easeIn)));
+      CurvedAnimation(
+        parent: _iconCtrl,
+        curve: const Interval(0.0, 0.4, curve: Curves.easeIn),
+      ),
+    );
 
-    _textCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
-    _textOpacity = Tween(begin: 0.0, end: 1.0)
-        .animate(CurvedAnimation(parent: _textCtrl, curve: Curves.easeOut));
-    _textSlide = Tween(begin: const Offset(0, 0.4), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _textCtrl, curve: Curves.easeOut));
+    _textCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _textOpacity = Tween(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _textCtrl, curve: Curves.easeOut));
+    _textSlide = Tween(
+      begin: const Offset(0, 0.4),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _textCtrl, curve: Curves.easeOut));
 
-    _tagCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
-    _tagOpacity = Tween(begin: 0.0, end: 1.0)
-        .animate(CurvedAnimation(parent: _tagCtrl, curve: Curves.easeOut));
-    _tagSlide = Tween(begin: const Offset(0, 0.4), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _tagCtrl, curve: Curves.easeOut));
+    _tagCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _tagOpacity = Tween(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _tagCtrl, curve: Curves.easeOut));
+    _tagSlide = Tween(
+      begin: const Offset(0, 0.4),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _tagCtrl, curve: Curves.easeOut));
 
-    _taglineCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
-    _taglineOpacity = Tween(begin: 0.0, end: 1.0)
-        .animate(CurvedAnimation(parent: _taglineCtrl, curve: Curves.easeOut));
-    _taglineSlide = Tween(begin: const Offset(0, 0.4), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _taglineCtrl, curve: Curves.easeOut));
+    _taglineCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _taglineOpacity = Tween(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _taglineCtrl, curve: Curves.easeOut));
+    _taglineSlide = Tween(
+      begin: const Offset(0, 0.4),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _taglineCtrl, curve: Curves.easeOut));
 
-    _ringCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 3000))..repeat();
+    _ringCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    )..repeat();
 
-    _particleCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 10000))..repeat();
+    _particleCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 10000),
+    )..repeat();
 
     // Shimmer on text
-    _shimmerCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800))..repeat();
-    _shimmerAnim = Tween(begin: -1.0, end: 2.0)
-        .animate(CurvedAnimation(parent: _shimmerCtrl, curve: Curves.easeInOut));
+    _shimmerCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat();
+    _shimmerAnim = Tween(
+      begin: -1.0,
+      end: 2.0,
+    ).animate(CurvedAnimation(parent: _shimmerCtrl, curve: Curves.easeInOut));
 
     // City skyline rising from bottom
-    _cityCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
-    _citySlide = Tween(begin: 1.0, end: 0.0)
-        .animate(CurvedAnimation(parent: _cityCtrl, curve: Curves.easeOut));
+    _cityCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _citySlide = Tween(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _cityCtrl, curve: Curves.easeOut));
 
     // Twinkling stars
-    _starCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000))..repeat();
+    _starCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat();
 
     // Progress bar
-    _progressCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 3000));
-    _progressAnim = Tween(begin: 0.0, end: 1.0)
-        .animate(CurvedAnimation(parent: _progressCtrl, curve: Curves.easeInOut));
+    _progressCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    );
+    _progressAnim = Tween(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _progressCtrl, curve: Curves.easeInOut));
 
     // Birds flying across screen
-    _birdCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 8000))..repeat();
+    _birdCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 8000),
+    )..repeat();
 
     // Wing flap
-    _wingCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 400))..repeat(reverse: true);
-    _wingAnim = Tween(begin: 0.0, end: 1.0)
-        .animate(CurvedAnimation(parent: _wingCtrl, curve: Curves.easeInOut));
+    _wingCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    )..repeat(reverse: true);
+    _wingAnim = Tween(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _wingCtrl, curve: Curves.easeInOut));
   }
 
   Future<void> _startSequence() async {
@@ -239,7 +319,10 @@ class _SplashScreenState extends State<SplashScreen>
           AnimatedBuilder(
             animation: _particleCtrl,
             builder: (_, __) => CustomPaint(
-              painter: _ParticlePainter(particles: _particles, progress: _particleCtrl.value),
+              painter: _ParticlePainter(
+                particles: _particles,
+                progress: _particleCtrl.value,
+              ),
               child: const SizedBox.expand(),
             ),
           ),
@@ -484,19 +567,32 @@ class _CityLogoPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
     final paint = Paint()..style = PaintingStyle.fill;
-    final rrect = (Rect r) => RRect.fromRectAndRadius(r, const Radius.circular(2));
+    final rrect = (Rect r) =>
+        RRect.fromRectAndRadius(r, const Radius.circular(2));
 
     paint.color = Colors.white54;
-    canvas.drawRRect(rrect(Rect.fromLTWH(w * 0.09, h * 0.52, w * 0.23, h * 0.38)), paint);
+    canvas.drawRRect(
+      rrect(Rect.fromLTWH(w * 0.09, h * 0.52, w * 0.23, h * 0.38)),
+      paint,
+    );
 
     paint.color = Colors.white;
-    canvas.drawRRect(rrect(Rect.fromLTWH(w * 0.38, h * 0.33, w * 0.23, h * 0.57)), paint);
+    canvas.drawRRect(
+      rrect(Rect.fromLTWH(w * 0.38, h * 0.33, w * 0.23, h * 0.57)),
+      paint,
+    );
 
     paint.color = Colors.white70;
-    canvas.drawRRect(rrect(Rect.fromLTWH(w * 0.67, h * 0.43, w * 0.23, h * 0.47)), paint);
+    canvas.drawRRect(
+      rrect(Rect.fromLTWH(w * 0.67, h * 0.43, w * 0.23, h * 0.47)),
+      paint,
+    );
 
     paint.color = Colors.white24;
-    canvas.drawRRect(rrect(Rect.fromLTWH(w * 0.45, h * 0.66, w * 0.10, h * 0.24)), paint);
+    canvas.drawRRect(
+      rrect(Rect.fromLTWH(w * 0.45, h * 0.66, w * 0.10, h * 0.24)),
+      paint,
+    );
 
     paint.color = Colors.white60;
     canvas.drawCircle(Offset(w * 0.50, h * 0.14), w * 0.07, paint);
@@ -526,7 +622,11 @@ class _BirdPainter extends CustomPainter {
   final double progress;
   final double wingAngle;
 
-  const _BirdPainter({required this.birds, required this.progress, required this.wingAngle});
+  const _BirdPainter({
+    required this.birds,
+    required this.progress,
+    required this.wingAngle,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -537,7 +637,9 @@ class _BirdPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     for (final b in birds) {
-      final x = ((b.startX + (progress + b.phase) * b.speed * 3) % 1.4 - 0.1) * size.width;
+      final x =
+          ((b.startX + (progress + b.phase) * b.speed * 3) % 1.4 - 0.1) *
+          size.width;
       final y = b.y * size.height + sin((progress + b.phase) * 2 * pi * 2) * 6;
       final s = b.scale * 10;
       final flap = sin(wingAngle * pi) * 0.5;
@@ -545,12 +647,22 @@ class _BirdPainter extends CustomPainter {
       // Left wing
       final path = Path();
       path.moveTo(x, y);
-      path.quadraticBezierTo(x - s * 0.8, y - s * flap, x - s * 1.6, y + s * 0.1);
+      path.quadraticBezierTo(
+        x - s * 0.8,
+        y - s * flap,
+        x - s * 1.6,
+        y + s * 0.1,
+      );
 
       // Right wing
       final path2 = Path();
       path2.moveTo(x, y);
-      path2.quadraticBezierTo(x + s * 0.8, y - s * flap, x + s * 1.6, y + s * 0.1);
+      path2.quadraticBezierTo(
+        x + s * 0.8,
+        y - s * flap,
+        x + s * 1.6,
+        y + s * 0.1,
+      );
 
       canvas.drawPath(path, paint);
       canvas.drawPath(path2, paint);
@@ -700,7 +812,12 @@ class _CitySkylinePainter extends CustomPainter {
 
 class _StarData {
   final double x, y, size, phase;
-  const _StarData({required this.x, required this.y, required this.size, required this.phase});
+  const _StarData({
+    required this.x,
+    required this.y,
+    required this.size,
+    required this.phase,
+  });
 }
 
 class _StarPainter extends CustomPainter {
@@ -715,7 +832,11 @@ class _StarPainter extends CustomPainter {
     for (final s in stars) {
       final twinkle = (sin((progress + s.phase) * 2 * pi) * 0.5 + 0.5);
       paint.color = _C.star.withOpacity(twinkle * 0.7 + 0.1);
-      canvas.drawCircle(Offset(s.x * size.width, s.y * size.height), s.size, paint);
+      canvas.drawCircle(
+        Offset(s.x * size.width, s.y * size.height),
+        s.size,
+        paint,
+      );
     }
   }
 
@@ -730,7 +851,11 @@ class _StarPainter extends CustomPainter {
 class _ParticleData {
   final double x, size;
   final Color color;
-  const _ParticleData({required this.x, required this.size, required this.color});
+  const _ParticleData({
+    required this.x,
+    required this.size,
+    required this.color,
+  });
 }
 
 class _ParticlePainter extends CustomPainter {
@@ -750,5 +875,6 @@ class _ParticlePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ParticlePainter old) => old.progress != progress;
+  bool shouldRepaint(covariant _ParticlePainter old) =>
+      old.progress != progress;
 }

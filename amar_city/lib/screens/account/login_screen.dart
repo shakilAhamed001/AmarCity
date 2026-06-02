@@ -120,6 +120,10 @@ class _LoginScreenState extends State<LoginScreen>
           message = 'Please verify your email first. Check your inbox.';
         } else if (message.contains('invalid_credentials')) {
           message = 'Invalid email or password.';
+        } else if (message.contains('user_already_exists') ||
+            message.contains('User already registered')) {
+          message =
+              'This email is already registered. Please verify your email or try logging in.';
         }
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(message)));

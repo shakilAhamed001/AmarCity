@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/supabase_service.dart';
 import 'officer_edit_profile_screen.dart';
 
+// OfficerAddressScreen — Officer এর saved address দেখানোর screen
 class OfficerAddressScreen extends StatefulWidget {
   const OfficerAddressScreen({Key? key}) : super(key: key);
 
@@ -9,20 +10,24 @@ class OfficerAddressScreen extends StatefulWidget {
   State<OfficerAddressScreen> createState() => _OfficerAddressScreenState();
 }
 
-//m
 class _OfficerAddressScreenState extends State<OfficerAddressScreen> {
+  // Database থেকে আনা address data
   Map<String, dynamic> _address = {};
+  // Data load হচ্ছে কিনা
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    // Screen load হলে address fetch করা হচ্ছে
     _loadAddress();
   }
 
+  // Supabase profiles table থেকে address fields fetch করার function
   Future<void> _loadAddress() async {
     setState(() => _isLoading = true);
     try {
+      // শুধু address related fields আনা হচ্ছে — current user এর জন্য
       final data = await supabase
           .from('profiles')
           .select(
@@ -39,6 +44,7 @@ class _OfficerAddressScreenState extends State<OfficerAddressScreen> {
     }
   }
 
+  // Address save করা আছে কিনা check করার getter
   bool get _hasAddress =>
       (_address['house_number'] ?? '').isNotEmpty ||
       (_address['street_name'] ?? '').isNotEmpty ||
@@ -64,6 +70,7 @@ class _OfficerAddressScreenState extends State<OfficerAddressScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
+          // Edit button — address edit screen এ navigate করবে
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: Color(0xFF1E40AF)),
             onPressed: () async {
@@ -72,11 +79,13 @@ class _OfficerAddressScreenState extends State<OfficerAddressScreen> {
                   builder: (context) => const OfficerAddressEditScreen(),
                 ),
               );
+              // Edit screen থেকে ফিরে আসলে address reload হবে
               _loadAddress();
             },
           ),
         ],
       ),
+      // Loading হলে spinner, address থাকলে card, না থাকলে empty state
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _hasAddress
@@ -85,6 +94,7 @@ class _OfficerAddressScreenState extends State<OfficerAddressScreen> {
     );
   }
 
+  // Address card widget — সব address fields দেখায়
   Widget _buildAddressCard() {
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -107,6 +117,7 @@ class _OfficerAddressScreenState extends State<OfficerAddressScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Card header — home icon ও title
                 Row(
                   children: [
                     Container(
@@ -134,6 +145,7 @@ class _OfficerAddressScreenState extends State<OfficerAddressScreen> {
                 const SizedBox(height: 20),
                 const Divider(height: 1),
                 const SizedBox(height: 20),
+                // প্রতিটি address field row হিসেবে দেখানো হচ্ছে
                 _buildRow(
                   Icons.home_outlined,
                   'House / Apartment',
@@ -173,6 +185,7 @@ class _OfficerAddressScreenState extends State<OfficerAddressScreen> {
             ),
           ),
           const SizedBox(height: 20),
+          // Edit Address button
           SizedBox(
             width: double.infinity,
             height: 50,
@@ -207,6 +220,7 @@ class _OfficerAddressScreenState extends State<OfficerAddressScreen> {
     );
   }
 
+  // একটি address row widget — icon, label ও value দেখায়
   Widget _buildRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -219,6 +233,7 @@ class _OfficerAddressScreenState extends State<OfficerAddressScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Label — ছোট ধূসর text
                 Text(
                   label,
                   style: const TextStyle(
@@ -228,6 +243,7 @@ class _OfficerAddressScreenState extends State<OfficerAddressScreen> {
                   ),
                 ),
                 const SizedBox(height: 2),
+                // Value — বড় text
                 Text(
                   value,
                   style: const TextStyle(
@@ -243,6 +259,7 @@ class _OfficerAddressScreenState extends State<OfficerAddressScreen> {
     );
   }
 
+  // Empty state widget — address না থাকলে দেখাবে
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -268,6 +285,7 @@ class _OfficerAddressScreenState extends State<OfficerAddressScreen> {
             style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
           ),
           const SizedBox(height: 24),
+          // Add Address button
           ElevatedButton.icon(
             onPressed: () async {
               await Navigator.of(context).push(
@@ -295,7 +313,7 @@ class _OfficerAddressScreenState extends State<OfficerAddressScreen> {
   }
 }
 
-// ── Address Edit Screen ──────────────────────────────────────────────────────
+// ── OfficerAddressEditScreen — Officer এর address edit করার screen ──────────
 
 class OfficerAddressEditScreen extends StatefulWidget {
   const OfficerAddressEditScreen({Key? key}) : super(key: key);
@@ -306,6 +324,7 @@ class OfficerAddressEditScreen extends StatefulWidget {
 }
 
 class _OfficerAddressEditScreenState extends State<OfficerAddressEditScreen> {
+  // Address field controllers
   late TextEditingController _houseController;
   late TextEditingController _streetController;
   late TextEditingController _wardController;
@@ -313,21 +332,25 @@ class _OfficerAddressEditScreenState extends State<OfficerAddressEditScreen> {
   late TextEditingController _stateController;
   late TextEditingController _postalController;
   late TextEditingController _countryController;
+  // Save loading state
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    // Controllers initialize করা হচ্ছে — database থেকে existing data load হবে
     _houseController = TextEditingController();
     _streetController = TextEditingController();
     _wardController = TextEditingController();
     _cityController = TextEditingController();
     _stateController = TextEditingController();
     _postalController = TextEditingController();
+    // Default country Bangladesh
     _countryController = TextEditingController(text: 'Bangladesh');
     _loadAddress();
   }
 
+  // Database থেকে existing address load করার function
   Future<void> _loadAddress() async {
     try {
       final data = await supabase
@@ -337,6 +360,7 @@ class _OfficerAddressEditScreenState extends State<OfficerAddressEditScreen> {
           )
           .eq('id', AuthService.currentUser!.id)
           .single();
+      // Database থেকে আনা data দিয়ে controllers update করা হচ্ছে
       setState(() {
         _houseController.text = data['house_number'] ?? '';
         _streetController.text = data['street_name'] ?? '';
@@ -351,6 +375,7 @@ class _OfficerAddressEditScreenState extends State<OfficerAddressEditScreen> {
 
   @override
   void dispose() {
+    // Memory leak এড়াতে সব controller dispose করা হচ্ছে
     _houseController.dispose();
     _streetController.dispose();
     _wardController.dispose();
@@ -361,9 +386,11 @@ class _OfficerAddressEditScreenState extends State<OfficerAddressEditScreen> {
     super.dispose();
   }
 
+  // Address save করার function
   Future<void> _save() async {
     setState(() => _isLoading = true);
     try {
+      // profiles table এ address update করা হচ্ছে
       await supabase
           .from('profiles')
           .update({
@@ -413,6 +440,7 @@ class _OfficerAddressEditScreenState extends State<OfficerAddressEditScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
+          // AppBar এ Save button
           TextButton(
             onPressed: _isLoading ? null : _save,
             child: _isLoading
@@ -451,6 +479,7 @@ class _OfficerAddressEditScreenState extends State<OfficerAddressEditScreen> {
               'e.g. Mirpur Road',
             ),
             const SizedBox(height: 16),
+            // Ward number — numeric keyboard
             _buildField(
               'WARD NUMBER',
               _wardController,
@@ -459,6 +488,7 @@ class _OfficerAddressEditScreenState extends State<OfficerAddressEditScreen> {
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
+            // City ও State — পাশাপাশি দুটি field
             Row(
               children: [
                 Expanded(
@@ -481,6 +511,7 @@ class _OfficerAddressEditScreenState extends State<OfficerAddressEditScreen> {
               ],
             ),
             const SizedBox(height: 16),
+            // Postal code ও Country — পাশাপাশি দুটি field
             Row(
               children: [
                 Expanded(
@@ -504,6 +535,7 @@ class _OfficerAddressEditScreenState extends State<OfficerAddressEditScreen> {
               ],
             ),
             const SizedBox(height: 32),
+            // Bottom Save Address button
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -540,6 +572,7 @@ class _OfficerAddressEditScreenState extends State<OfficerAddressEditScreen> {
     );
   }
 
+  // Reusable form field widget
   Widget _buildField(
     String label,
     TextEditingController controller,
@@ -550,6 +583,7 @@ class _OfficerAddressEditScreenState extends State<OfficerAddressEditScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Field label — uppercase ছোট text
         Text(
           label,
           style: const TextStyle(
@@ -573,6 +607,7 @@ class _OfficerAddressEditScreenState extends State<OfficerAddressEditScreen> {
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide.none,
             ),
+            // Focus হলে নীল border দেখাবে
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(

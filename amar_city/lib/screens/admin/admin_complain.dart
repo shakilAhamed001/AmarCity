@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/supabase_service.dart';
 import '../../services/notification_service.dart';
 import '../complaint_tracking/complaint_detail_screen.dart';
 
+// AdminComplaints — Admin এর complaint management screen
 class AdminComplaints extends StatefulWidget {
   const AdminComplaints({Key? key}) : super(key: key);
 
@@ -11,13 +13,20 @@ class AdminComplaints extends StatefulWidget {
 }
 
 class _AdminComplaintsState extends State<AdminComplaints> {
+  // Status filter — শুরুতে সব complaint দেখাবে
   String _selectedFilter = 'All';
+  // Department filter — শুরুতে সব department দেখাবে
   String _selectedDepartment = 'All';
+  // Search query — title বা location দিয়ে খোঁজার জন্য
   String _searchQuery = '';
+  // Database থেকে আনা সব complaint
   List<Map<String, dynamic>> _allComplaints = [];
+  // Database থেকে আনা সব officer
   List<Map<String, dynamic>> _allOfficers = [];
+  // Data load হচ্ছে কিনা
   bool _isLoading = true;
 
+  // Available department list
   final List<String> _departments = [
     'All',
     'Engineering Department',
@@ -29,10 +38,12 @@ class _AdminComplaintsState extends State<AdminComplaints> {
   @override
   void initState() {
     super.initState();
+    // Screen load হলে complaints ও officers fetch করা হচ্ছে
     _fetchComplaints();
     _fetchOfficers();
   }
 
+  // Supabase থেকে সব complaint fetch করার function — নতুন আগে
   Future<void> _fetchComplaints() async {
     setState(() => _isLoading = true);
     try {
@@ -59,32 +70,44 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     }
   }
 
+  // Supabase profiles table থেকে সরাসরি Officer role filter করে fetch করার function
+  // এটি dialog open হওয়ার আগেও call হয় — সবসময় fresh data পাওয়ার জন্য
   Future<void> _fetchOfficers() async {
     try {
-      final data = await supabase.from('profiles').select();
-      final all = (data as List)
+      // Database এ role = 'Officer' দিয়ে সরাসরি filter করা হচ্ছে
+      // এতে নতুন create করা officer রাও আসবে
+      final data = await supabase
+          .from('profiles')
+          .select()
+          .eq('role', 'Officer');
+      final officers = (data as List)
           .map((e) => Map<String, dynamic>.from(e as Map))
           .toList();
-      setState(() {
-        _allOfficers = all
-            .where(
-              (o) => (o['role'] as String? ?? '').toLowerCase() == 'officer',
-            )
-            .toList();
-      });
+      if (mounted) setState(() => _allOfficers = officers);
     } catch (e) {
       debugPrint('Officers error: $e');
     }
   }
 
+  // Officer assign করার dialog দেখানোর function
   Future<void> _showAssignDialog(Map<String, dynamic> complaint) async {
+    // Dialog open হওয়ার আগে সবসময় fresh officer data fetch করা হচ্ছে
+    // এতে নতুন create করা officer রাও list এ দেখাবে
+    await _fetchOfficers();
+
     final dept = complaint['assigned_department'] as String? ?? '';
+
+    // Complaint এর department অনুযায়ী officer filter করা হচ্ছে
+    // dept match করে এমন + department null/empty এমন officers উভয়ই দেখাবে
     final deptOfficers = dept.isEmpty
         ? _allOfficers
         : _allOfficers
-              .where((o) => (o['department'] as String? ?? '') == dept)
+              .where((o) {
+                final oDept = (o['department'] as String? ?? '').trim();
+                // department match করলে অথবা officer এর department null/empty হলে দেখাবে
+                return oDept == dept.trim() || oDept.isEmpty;
+              })
               .toList();
-
     String? selectedOfficerId = complaint['assigned_officer_id'] as String?;
 
     await showDialog(
@@ -104,11 +127,13 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                     labelText: 'Select Officer',
                   ),
                   items: deptOfficers.map((o) {
+                    final oDept = (o['department'] as String? ?? '').trim();
+                    final name = (o['full_name'] ?? o['email'] ?? 'Officer').toString();
+                    // department null হলে label এ জানিয়ে দেওয়া হচ্ছে
+                    final label = oDept.isEmpty ? '$name (no dept)' : name;
                     return DropdownMenuItem<String>(
                       value: o['id']?.toString(),
-                      child: Text(
-                        (o['full_name'] ?? o['email'] ?? 'Officer').toString(),
-                      ),
+                      child: Text(label),
                     );
                   }).toList(),
                   onChanged: (val) =>
@@ -131,12 +156,13 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                     final complaintTitle =
                         complaint['title']?.toString() ?? 'Complaint';
 
+                    // Complaint এ officer assign করা হচ্ছে
                     await supabase
                         .from('complaints')
                         .update({'assigned_officer_id': selectedOfficerId})
                         .eq('id', complaint['id']);
 
-                    // Notify assigned officer
+                    // Assigned officer কে notification পাঠানো হচ্ছে
                     await NotificationService.send(
                       userId: selectedOfficerId!,
                       title: 'New Complaint Assigned',
@@ -145,7 +171,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                       complaintId: complaintId,
                     );
 
-                    // Notify citizen
+                    // Citizen কেও notification পাঠানো হচ্ছে
                     final citizenId = complaint['citizen_id']?.toString();
                     if (citizenId != null) {
                       await NotificationService.send(
@@ -158,7 +184,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                       );
                     }
 
-                    // Add history entry
+                    // Status history তে entry যোগ করা হচ্ছে
                     await NotificationService.addStatusHistory(
                       complaintId: complaintId,
                       status: complaint['status']?.toString() ?? 'New',
@@ -166,6 +192,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                       updatedBy: 'admin',
                     );
 
+                    // Local list update করা হচ্ছে — database call ছাড়াই UI refresh
                     final idx = _allComplaints.indexWhere(
                       (c) => c['id'] == complaint['id'],
                     );
@@ -199,6 +226,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     );
   }
 
+  // Filter ও search অনুযায়ী complaint list return করার getter
   List<Map<String, dynamic>> get _filtered {
     return _allComplaints.where((c) {
       final title = (c['title'] as String? ?? '').toLowerCase();
@@ -206,8 +234,11 @@ class _AdminComplaintsState extends State<AdminComplaints> {
       final status = c['status'] as String? ?? '';
       final dept = c['assigned_department'] as String? ?? '';
       final query = _searchQuery.toLowerCase();
+      // Search query match করা হচ্ছে
       final matchSearch = title.contains(query) || location.contains(query);
+      // Status filter match করা হচ্ছে
       final matchStatus = _selectedFilter == 'All' || status == _selectedFilter;
+      // Department filter match করা হচ্ছে
       final matchDept =
           _selectedDepartment == 'All' || dept == _selectedDepartment;
       return matchSearch && matchStatus && matchDept;
@@ -233,12 +264,16 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Status filter chips
                     _buildStatusFilters(),
                     const SizedBox(height: 12),
+                    // Department dropdown filter
                     _buildDepartmentFilter(),
                     const SizedBox(height: 12),
+                    // Search field
                     _buildSearchField(),
                     const SizedBox(height: 16),
+                    // Loading, empty বা complaint list দেখানো হচ্ছে
                     if (_isLoading)
                       const Center(
                         child: Padding(
@@ -281,6 +316,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     );
   }
 
+  // Header widget — gradient background, title ও total count
   Widget _buildHeader() {
     return Container(
       decoration: const BoxDecoration(
@@ -307,6 +343,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
             ),
           ),
           const SizedBox(height: 4),
+          // মোট complaint সংখ্যা dynamically দেখানো হচ্ছে
           Text(
             '${_allComplaints.length} total complaints',
             style: const TextStyle(color: Colors.white70, fontSize: 13),
@@ -316,6 +353,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     );
   }
 
+  // Status filter chips — All, New, In progress, Resolved
   Widget _buildStatusFilters() {
     final filters = ['All', 'New', 'In progress', 'Resolved'];
     return SingleChildScrollView(
@@ -324,11 +362,13 @@ class _AdminComplaintsState extends State<AdminComplaints> {
         children: filters.map((f) {
           final isSelected = _selectedFilter == f;
           return GestureDetector(
+            // Tap করলে filter পরিবর্তন হবে
             onTap: () => setState(() => _selectedFilter = f),
             child: Container(
               margin: const EdgeInsets.only(right: 10),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
+                // Selected হলে বেগুনি, না হলে সাদা
                 color: isSelected ? const Color(0xFF7C3AED) : Colors.white,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
@@ -352,6 +392,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     );
   }
 
+  // Department dropdown filter widget
   Widget _buildDepartmentFilter() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -377,6 +418,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     );
   }
 
+  // Search field widget — title বা location দিয়ে খোঁজা যাবে
   Widget _buildSearchField() {
     return Container(
       decoration: BoxDecoration(
@@ -397,6 +439,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     );
   }
 
+  // একটি complaint card widget
   Widget _buildCard(Map<String, dynamic> c) {
     final status = c['status'] as String? ?? 'New';
     final statusColor = _statusColor(status);
@@ -405,8 +448,10 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     final location = c['location'] as String? ?? '';
     final dept = c['assigned_department'] as String? ?? '';
     final date = _formatDate(c['created_at'] as String?);
+    // Officer assign হয়েছে কিনা check করা হচ্ছে
     final isAssigned = c['assigned_officer_id'] != null;
 
+    // Assigned officer এর নাম খোঁজা হচ্ছে
     final assignedOfficer = isAssigned
         ? _allOfficers.firstWhere(
             (o) => o['id']?.toString() == c['assigned_officer_id']?.toString(),
@@ -419,6 +464,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
         : '';
 
     return GestureDetector(
+      // Tap করলে complaint detail screen এ navigate করবে
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) =>
@@ -438,6 +484,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
           children: [
             Row(
               children: [
+                // Category icon container
                 Container(
                   width: 44,
                   height: 44,
@@ -459,6 +506,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+                          // Category label
                           Text(
                             category,
                             style: const TextStyle(
@@ -467,6 +515,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
+                          // Status badge
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -488,6 +537,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                         ],
                       ),
                       const SizedBox(height: 4),
+                      // Complaint title
                       Text(
                         title,
                         style: const TextStyle(
@@ -521,6 +571,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                     ),
                   ),
                 ),
+                // Submit date
                 Text(
                   date,
                   style: const TextStyle(
@@ -530,6 +581,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                 ),
               ],
             ),
+            // Department badge — department থাকলে দেখাবে
             if (dept.isNotEmpty) ...[
               const SizedBox(height: 8),
               Container(
@@ -552,6 +604,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                // Officer নাম বা 'Unassigned' দেখানো হচ্ছে
                 if (officerName.isNotEmpty)
                   Expanded(
                     child: Row(
@@ -581,6 +634,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                     'Unassigned',
                     style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 11),
                   ),
+                // Assign বা Reassign button
                 GestureDetector(
                   onTap: () => _showAssignDialog(c),
                   child: Container(
@@ -589,6 +643,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
+                      // Assigned হলে সবুজ, না হলে বেগুনি background
                       color: isAssigned
                           ? const Color(0xFFDCFCE7)
                           : const Color(0xFFEDE9FE),
@@ -614,6 +669,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     );
   }
 
+  // Status অনুযায়ী রঙ return করার helper
   Color _statusColor(String status) {
     switch (status) {
       case 'In progress':
@@ -623,10 +679,11 @@ class _AdminComplaintsState extends State<AdminComplaints> {
       case 'Escalated':
         return const Color(0xFFDC2626);
       default:
-        return const Color(0xFF3B82F6);
+        return const Color(0xFF3B82F6); // New
     }
   }
 
+  // Category অনুযায়ী icon return করার helper
   IconData _categoryIcon(String category) {
     switch (category) {
       case 'ROAD':
@@ -643,6 +700,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     }
   }
 
+  // Category অনুযায়ী রঙ return করার helper
   Color _categoryColor(String category) {
     switch (category) {
       case 'ROAD':
@@ -659,23 +717,14 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     }
   }
 
+  // ISO date string কে 'Jan 5' format এ convert করার helper
   String _formatDate(String? iso) {
     if (iso == null) return '';
     final dt = DateTime.tryParse(iso);
     if (dt == null) return '';
     const m = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
     return '${m[dt.month - 1]} ${dt.day}';
   }

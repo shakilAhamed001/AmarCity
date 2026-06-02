@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/supabase_service.dart';
 
+// OfficerEditProfileScreen — Officer এর profile edit করার screen
 class OfficerEditProfileScreen extends StatefulWidget {
   const OfficerEditProfileScreen({Key? key}) : super(key: key);
 
@@ -11,30 +12,37 @@ class OfficerEditProfileScreen extends StatefulWidget {
 }
 
 class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
+  // নাম ও email field এর controller
   late TextEditingController _nameController;
   late TextEditingController _emailController;
+  // Save loading state
   bool _isLoading = false;
 
+  // Department — auth metadata থেকে read করা হচ্ছে, change করা যাবে না
   String get _department =>
       (AuthService.currentUser?.userMetadata?['department'] as String?) ?? '';
 
   @override
   void initState() {
     super.initState();
+    // Current user এর info দিয়ে controllers initialize করা হচ্ছে
     final user = AuthService.currentUser;
     _nameController = TextEditingController(
       text: user?.userMetadata?['full_name'] ?? '',
     );
+    // Email read-only — এখানে change করা যাবে না
     _emailController = TextEditingController(text: user?.email ?? '');
   }
 
   @override
   void dispose() {
+    // Memory leak এড়াতে controllers dispose করা হচ্ছে
     _nameController.dispose();
     _emailController.dispose();
     super.dispose();
   }
 
+  // Profile save করার function
   Future<void> _save() async {
     if (_nameController.text.trim().isEmpty) {
       _showSnack('Name cannot be empty');
@@ -42,9 +50,11 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
     }
     setState(() => _isLoading = true);
     try {
+      // Supabase auth metadata তে full_name update করা হচ্ছে
       await supabase.auth.updateUser(
         UserAttributes(data: {'full_name': _nameController.text.trim()}),
       );
+      // profiles table এও নাম update করা হচ্ছে
       await supabase
           .from('profiles')
           .update({'full_name': _nameController.text.trim()})
@@ -52,6 +62,7 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
 
       if (mounted) {
         _showSnack('Profile updated successfully');
+        // true return করে parent screen কে জানানো হচ্ছে যে update হয়েছে
         Navigator.of(context).pop(true);
       }
     } catch (e) {
@@ -61,11 +72,13 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
     }
   }
 
+  // Snackbar দেখানোর helper function
   void _showSnack(String msg) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
   @override
   Widget build(BuildContext context) {
+    // Avatar এ নামের প্রথম অক্ষর দেখানোর জন্য
     final userName = _nameController.text;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -85,6 +98,7 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
+          // AppBar এ Save button — loading চলাকালীন disable
           TextButton(
             onPressed: _isLoading ? null : _save,
             child: _isLoading
@@ -110,6 +124,7 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
+            // Circle avatar — নামের প্রথম অক্ষর দিয়ে
             Center(
               child: CircleAvatar(
                 radius: 50,
@@ -127,6 +142,7 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
             const SizedBox(height: 32),
             _buildSectionTitle('PERSONAL INFO'),
             const SizedBox(height: 12),
+            // Full name field — editable
             _buildField(
               label: 'FULL NAME',
               controller: _nameController,
@@ -134,6 +150,7 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
               hint: 'Enter your full name',
             ),
             const SizedBox(height: 16),
+            // Email field — read-only
             _buildField(
               label: 'EMAIL ADDRESS',
               controller: _emailController,
@@ -146,6 +163,7 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
               'Email cannot be changed here.',
               style: TextStyle(fontSize: 11, color: Colors.grey),
             ),
+            // Department field — read-only, শুধু Officer এর জন্য দেখাবে
             if (_department.isNotEmpty == true) ...[
               const SizedBox(height: 16),
               _buildReadOnlyInfo(
@@ -155,6 +173,7 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
               ),
             ],
             const SizedBox(height: 32),
+            // Bottom Save Changes button
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -166,6 +185,7 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
+                // Loading হলে spinner, না হলে text
                 child: _isLoading
                     ? const SizedBox(
                         width: 22,
@@ -191,6 +211,7 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
     );
   }
 
+  // Section title widget — নীল রঙে uppercase text
   Widget _buildSectionTitle(String title) => Text(
     title,
     style: const TextStyle(
@@ -201,6 +222,7 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
     ),
   );
 
+  // Read-only info display widget — department দেখানোর জন্য
   Widget _buildReadOnlyInfo(String label, String value, IconData icon) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,6 +241,7 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           decoration: BoxDecoration(
+            // Read-only field এর background ধূসর
             color: const Color(0xFFEEEEEE),
             borderRadius: BorderRadius.circular(10),
           ),
@@ -242,6 +265,7 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
     );
   }
 
+  // Reusable form field widget — label, icon, hint ও optional readOnly সহ
   Widget _buildField({
     required String label,
     required TextEditingController controller,
@@ -252,6 +276,7 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Field label — uppercase ছোট text
         Text(
           label,
           style: const TextStyle(
@@ -270,6 +295,7 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
             hintStyle: const TextStyle(color: Color(0xFF999999), fontSize: 13),
             prefixIcon: Icon(icon, color: const Color(0xFF1E40AF), size: 18),
             filled: true,
+            // Read-only field এর background আলাদা রঙ
             fillColor: readOnly
                 ? const Color(0xFFEEEEEE)
                 : const Color(0xFFF5F5F5),
@@ -277,6 +303,7 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide.none,
             ),
+            // Focus হলে নীল border দেখাবে
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(

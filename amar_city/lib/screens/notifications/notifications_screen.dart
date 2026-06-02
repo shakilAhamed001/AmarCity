@@ -4,9 +4,10 @@ import '../../services/supabase_service.dart';
 import '../../services/notification_service.dart';
 import '../complaint_tracking/complaint_detail_screen.dart';
 
+// NotificationsScreen — user এর সব notification দেখানোর screen
 class NotificationsScreen extends StatefulWidget {
-  final String viewerRole;
-  final VoidCallback? onBack;
+  final String viewerRole; // 'Citizen', 'Officer', বা 'Admin'
+  final VoidCallback? onBack; // Back button callback — optional
   const NotificationsScreen({Key? key, required this.viewerRole, this.onBack})
       : super(key: key);
 
@@ -15,23 +16,30 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
+  // Database থেকে আনা notification list
   List<Map<String, dynamic>> _notifications = [];
+  // Data load হচ্ছে কিনা
   bool _isLoading = true;
+  // Realtime subscription channel — নতুন notification আসলে auto update হবে
   RealtimeChannel? _channel;
 
   @override
   void initState() {
     super.initState();
+    // Screen load হলে notifications fetch করা হচ্ছে
     _fetchNotifications();
+    // Realtime subscription চালু করা হচ্ছে
     _subscribeRealtime();
   }
 
   @override
   void dispose() {
+    // Screen বন্ধ হলে realtime subscription cancel করা হচ্ছে
     _channel?.unsubscribe();
     super.dispose();
   }
 
+  // Supabase থেকে current user এর notifications fetch করার function
   Future<void> _fetchNotifications() async {
     final user = AuthService.currentUser;
     if (user == null) return;
@@ -46,15 +54,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  // Supabase Realtime দিয়ে নতুন notification আসলে auto update করার function
   void _subscribeRealtime() {
     final user = AuthService.currentUser;
     if (user == null) return;
+    // এই user এর জন্য notifications table এ insert event listen করা হচ্ছে
     _channel = supabase
         .channel('notifications:${user.id}')
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
           schema: 'public',
           table: 'notifications',
+          // শুধু এই user এর notification filter করা হচ্ছে
           filter: PostgresChangeFilter(
             type: PostgresChangeFilterType.eq,
             column: 'user_id',
@@ -62,6 +73,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
           callback: (payload) {
             if (mounted) {
+              // নতুন notification list এর শুরুতে যোগ করা হচ্ছে
               final newNotif = Map<String, dynamic>.from(payload.newRecord);
               setState(() => _notifications.insert(0, newNotif));
             }
@@ -70,17 +82,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         .subscribe();
   }
 
+  // Notification tap করলে complaint detail screen এ navigate করার function
   Future<void> _openComplaint(Map<String, dynamic> notif) async {
     final complaintId = notif['complaint_id']?.toString();
     if (complaintId == null) return;
 
-    // Mark as read
+    // Unread হলে read হিসেবে mark করা হচ্ছে
     if (notif['is_read'] == false) {
       await NotificationService.markRead(notif['id'].toString());
       setState(() => notif['is_read'] = true);
     }
 
-    // Fetch complaint
+    // Complaint data fetch করে detail screen এ navigate করা হচ্ছে
     try {
       final data = await supabase
           .from('complaints')
@@ -103,12 +116,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  // Unread notification এর সংখ্যা গণনা করার getter
   int get _unreadCount =>
       _notifications.where((n) => n['is_read'] == false).length;
 
   @override
   Widget build(BuildContext context) {
     final user = AuthService.currentUser;
+    // User login না থাকলে message দেখানো হচ্ছে
     if (user == null) {
       return const Center(
         child: Text('Notifications not available.',
@@ -121,22 +136,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: const Color(0xFF1E40AF),
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
+        // onBack callback থাকলে back button দেখাবে
         leading: widget.onBack != null
             ? IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: widget.onBack,
               )
             : null,
+        // Title এ unread count দেখানো হচ্ছে
         title: Text(
           'Notifications${_unreadCount > 0 ? ' ($_unreadCount)' : ''}',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
+          // Unread থাকলে 'Mark all read' button দেখাবে
           if (_unreadCount > 0)
             TextButton(
               onPressed: () async {
                 final user = AuthService.currentUser;
                 if (user == null) return;
+                // সব notification read হিসেবে mark করা হচ্ছে
                 await NotificationService.markAllRead(user.id);
                 setState(() {
                   for (final n in _notifications) {
@@ -149,6 +168,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
         ],
       ),
+      // Loading, empty বা notification list দেখানো হচ্ছে
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _notifications.isEmpty
@@ -167,6 +187,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
+  // একটি notification card widget তৈরি করার function
   Widget _buildNotifCard(Map<String, dynamic> notif) {
     final isRead = notif['is_read'] == true;
     final title = notif['title'] as String? ?? '';
@@ -175,10 +196,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final date = _formatDate(notif['created_at'] as String?);
 
     return GestureDetector(
+      // Tap করলে complaint detail screen এ যাবে
       onTap: () => _openComplaint(notif),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
+          // Read হলে সাদা, unread হলে হালকা নীল background
           color: isRead ? Colors.white : const Color(0xFFEFF6FF),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -189,6 +212,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Type অনুযায়ী icon container
             Container(
               width: 40,
               height: 40,
@@ -209,12 +233,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       Expanded(
                         child: Text(title,
                             style: TextStyle(
+                                // Unread হলে bold, read হলে normal weight
                                 fontWeight: isRead
                                     ? FontWeight.w500
                                     : FontWeight.bold,
                                 fontSize: 13,
                                 color: const Color(0xFF1F2937))),
                       ),
+                      // Unread হলে নীল dot দেখাবে
                       if (!isRead)
                         Container(
                           width: 8,
@@ -226,12 +252,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ],
                   ),
                   const SizedBox(height: 4),
+                  // Notification body — সর্বোচ্চ ২ লাইন
                   Text(body,
                       style: const TextStyle(
                           color: Color(0xFF6B7280), fontSize: 12),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 4),
+                  // তারিখ
                   Text(date,
                       style: const TextStyle(
                           color: Color(0xFF9CA3AF), fontSize: 11)),
@@ -244,17 +272,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
+  // Notification type অনুযায়ী রঙ return করার helper
   Color _typeColor(String type) {
     switch (type) {
       case 'assignment':
-        return const Color(0xFF7C3AED);
+        return const Color(0xFF7C3AED); // বেগুনি — assignment
       case 'status_update':
-        return const Color(0xFF059669);
+        return const Color(0xFF059669); // সবুজ — status update
       default:
-        return const Color(0xFF3B82F6);
+        return const Color(0xFF3B82F6); // নীল — default
     }
   }
 
+  // Notification type অনুযায়ী icon return করার helper
   IconData _typeIcon(String type) {
     switch (type) {
       case 'assignment':
@@ -266,6 +296,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  // ISO date string কে 'Jan 5, 2024' format এ convert করার helper
   String _formatDate(String? iso) {
     if (iso == null) return '';
     final dt = DateTime.tryParse(iso);
