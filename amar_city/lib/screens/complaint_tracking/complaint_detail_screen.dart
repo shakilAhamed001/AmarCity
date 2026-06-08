@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import '../../services/supabase_service.dart';
 import '../../services/notification_service.dart';
 
-// ComplaintDetailScreen — একটি complaint এর সব details দেখানোর screen
-// Citizen, Officer ও Admin তিনজনই এই screen ব্যবহার করে
 class ComplaintDetailScreen extends StatefulWidget {
   final Map<String, dynamic> complaint;
-  final String viewerRole; // 'Citizen' | 'Officer' | 'Admin'
+  final String viewerRole;
 
   const ComplaintDetailScreen({
     Key? key,
@@ -19,28 +17,20 @@ class ComplaintDetailScreen extends StatefulWidget {
 }
 
 class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
-  // Complaint data — mutable copy রাখা হচ্ছে যাতে update করা যায়
   late Map<String, dynamic> _complaint;
-  // Status history list
   List<Map<String, dynamic>> _history = [];
-  // Assigned officer এর profile
   Map<String, dynamic>? _officerProfile;
-  // Complaint submit করা citizen এর profile
   Map<String, dynamic>? _citizenProfile;
-  // Data load হচ্ছে কিনা
   bool _isLoading = true;
-  // Status update হচ্ছে কিনা
   bool _isUpdating = false;
-  // Officer এর comment field controller
+  String? _updatingStatus; // কোন status button এ spinner দেখাবে track করার জন্য
   final _commentController = TextEditingController();
 
-  // Available status options
   static const _statuses = ['New', 'In progress', 'Resolved'];
 
   @override
   void initState() {
     super.initState();
-    // Parent থেকে আসা complaint data copy করা হচ্ছে
     _complaint = Map<String, dynamic>.from(widget.complaint);
     _loadDetails();
   }
@@ -51,26 +41,26 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
     super.dispose();
   }
 
-  // Complaint এর সব details load করার function
-  Future<void> _loadDetails() async {
-    setState(() => _isLoading = true);
+  // showLoading false হলে spinner দেখাবে না — status update এর পরে reload এর জন্য
+  Future<void> _loadDetails({bool showLoading = true}) async {
+    if (showLoading) setState(() => _isLoading = true);
     try {
-      // Status history fetch করা হচ্ছে
       _history = await NotificationService.fetchStatusHistory(
           _complaint['id'].toString());
 
-      // Assigned officer এর profile fetch করা হচ্ছে
-      final officerId = _complaint['assigned_officer_id'];
-      if (officerId != null) {
+      // Officer profile — null safe check
+      final officerId = _complaint['assigned_officer_id']?.toString();
+      if (officerId != null && officerId.isNotEmpty) {
         final data = await supabase
             .from('profiles')
             .select()
             .eq('id', officerId)
             .maybeSingle();
         _officerProfile = data != null ? Map<String, dynamic>.from(data) : null;
+      } else {
+        _officerProfile = null;
       }
 
-      // Citizen এর profile fetch করা হচ্ছে
       final citizenId = _complaint['citizen_id'];
       if (citizenId != null) {
         final data = await supabase
@@ -81,7 +71,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
         _citizenProfile = data != null ? Map<String, dynamic>.from(data) : null;
       }
 
-      // সর্বশেষ complaint data fetch করা হচ্ছে — fresh data নিশ্চিত করতে
       final fresh = await supabase
           .from('complaints')
           .select()
@@ -95,20 +84,20 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
     }
   }
 
-  // Officer কর্তৃক complaint status update করার function
   Future<void> _updateStatus(String newStatus) async {
     final comment = _commentController.text.trim();
-    setState(() => _isUpdating = true);
+    setState(() {
+      _isUpdating = true;
+      _updatingStatus = newStatus; // শুধু এই button এ spinner দেখাবে
+    });
     try {
       final complaintId = _complaint['id'].toString();
       final officerId = AuthService.currentUser!.id;
 
-      // Database এ complaint status update করা হচ্ছে
       await supabase
           .from('complaints')
           .update({'status': newStatus}).eq('id', complaintId);
 
-      // Status history তে নতুন entry যোগ করা হচ্ছে
       await NotificationService.addStatusHistory(
         complaintId: complaintId,
         status: newStatus,
@@ -116,7 +105,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
         updatedBy: officerId,
       );
 
-      // Citizen কে notification পাঠানো হচ্ছে
       final citizenId = _complaint['citizen_id']?.toString();
       if (citizenId != null) {
         await NotificationService.send(
@@ -128,7 +116,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
         );
       }
 
-      // সব Admin কে notification পাঠানো হচ্ছে
       final admins = await supabase
           .from('profiles')
           .select('id')
@@ -137,16 +124,15 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
         await NotificationService.send(
           userId: admin['id'].toString(),
           title: 'Complaint Updated by Officer',
-          body:
-              'Complaint "${_complaint['title']}" status changed to $newStatus.',
+          body: 'Complaint "${_complaint['title']}" status changed to $newStatus.',
           type: 'status_update',
           complaintId: complaintId,
         );
       }
 
       _commentController.clear();
-      // Details reload করা হচ্ছে — fresh data দেখাতে
-      await _loadDetails();
+      // showLoading false — status update এর পরে screen spinner দেখাবে না
+      await _loadDetails(showLoading: false);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -162,7 +148,10 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
             .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
-      if (mounted) setState(() => _isUpdating = false);
+      if (mounted) setState(() {
+        _isUpdating = false;
+        _updatingStatus = null;
+      });
     }
   }
 
@@ -180,7 +169,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
             style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
-      // Loading হলে spinner, না হলে details দেখানো হচ্ছে
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -188,31 +176,24 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Status banner — বর্তমান status দেখাচ্ছে
                   _buildStatusBanner(status, statusColor),
                   const SizedBox(height: 16),
-                  // Complaint info card — title, description, location
                   _buildInfoCard(),
                   const SizedBox(height: 16),
-                  // Image attachments — থাকলে দেখাবে
                   if (_complaint['image_urls'] != null &&
                       (_complaint['image_urls'] as List?)?.isNotEmpty == true)
                     _buildImagesCard(),
                   if (_complaint['image_urls'] != null &&
                       (_complaint['image_urls'] as List?)?.isNotEmpty == true)
                     const SizedBox(height: 16),
-                  // Citizen info — Citizen ছাড়া অন্যরা দেখতে পাবে
                   if (_citizenProfile != null && widget.viewerRole != 'Citizen')
                     _buildCitizenCard(),
                   if (_citizenProfile != null && widget.viewerRole != 'Citizen')
                     const SizedBox(height: 16),
-                  // Officer info — assign হলে দেখাবে
                   if (_officerProfile != null) _buildOfficerCard(),
                   if (_officerProfile != null) const SizedBox(height: 16),
-                  // Status timeline — history দেখাচ্ছে
                   _buildTimeline(),
                   const SizedBox(height: 16),
-                  // Status update panel — শুধু Officer দেখতে পাবে
                   if (widget.viewerRole == 'Officer') _buildStatusUpdatePanel(),
                   const SizedBox(height: 24),
                 ],
@@ -221,7 +202,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
     );
   }
 
-  // Status banner widget — বর্তমান status রঙ সহ দেখায়
   Widget _buildStatusBanner(String status, Color color) {
     return Container(
       width: double.infinity,
@@ -235,17 +215,14 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
         children: [
           Icon(Icons.info_outline, color: color, size: 20),
           const SizedBox(width: 10),
-          Text(
-            'Status: $status',
-            style: TextStyle(
-                color: color, fontWeight: FontWeight.bold, fontSize: 14),
-          ),
+          Text('Status: $status',
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.bold, fontSize: 14)),
         ],
       ),
     );
   }
 
-  // Complaint info card — category, title, description, location, department
   Widget _buildInfoCard() {
     final category = _complaint['category'] as String? ?? '';
     final title = _complaint['title'] as String? ?? '';
@@ -260,10 +237,8 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
         children: [
           Row(
             children: [
-              // Category badge
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1E40AF).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
@@ -275,28 +250,22 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                         fontWeight: FontWeight.w600)),
               ),
               const Spacer(),
-              // Submit date
               Text(createdAt,
-                  style: const TextStyle(
-                      color: Color(0xFF9CA3AF), fontSize: 12)),
+                  style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12)),
             ],
           ),
           const SizedBox(height: 10),
-          // Complaint title
           Text(title,
               style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1F2937))),
           const SizedBox(height: 8),
-          // Description
           Text(description,
               style: const TextStyle(
                   fontSize: 13, color: Color(0xFF4B5563), height: 1.5)),
           const SizedBox(height: 12),
-          // Location row
           _infoRow(Icons.location_on_outlined, location),
-          // Department row — থাকলে দেখাবে
           if (dept.isNotEmpty) ...[
             const SizedBox(height: 6),
             _infoRow(Icons.business_outlined, dept),
@@ -306,11 +275,13 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
     );
   }
 
-  // Image attachments card — complaint এর সাথে দেওয়া ছবি দেখায়
   Widget _buildImagesCard() {
     final raw = _complaint['image_urls'];
     if (raw == null) return const SizedBox.shrink();
-    final urls = (raw as List).map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+    final urls = (raw as List)
+        .map((e) => e.toString())
+        .where((e) => e.isNotEmpty)
+        .toList();
     if (urls.isEmpty) return const SizedBox.shrink();
     return _card(
       child: Column(
@@ -322,7 +293,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                   fontSize: 14,
                   color: Color(0xFF1F2937))),
           const SizedBox(height: 12),
-          // Image grid — 3 column
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -333,7 +303,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
             ),
             itemCount: urls.length,
             itemBuilder: (_, i) => GestureDetector(
-              // Tap করলে full screen এ দেখাবে
               onTap: () => _showFullImage(urls[i]),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
@@ -358,7 +327,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
     );
   }
 
-  // Full screen image viewer dialog
   void _showFullImage(String url) {
     showDialog(
       context: context,
@@ -367,11 +335,9 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
         insetPadding: const EdgeInsets.all(12),
         child: Stack(
           children: [
-            // Pinch to zoom সহ image দেখানো হচ্ছে
             InteractiveViewer(
               child: Image.network(url, fit: BoxFit.contain),
             ),
-            // Close button
             Positioned(
               top: 8,
               right: 8,
@@ -381,8 +347,7 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                   padding: const EdgeInsets.all(6),
                   decoration: const BoxDecoration(
                       color: Colors.black54, shape: BoxShape.circle),
-                  child: const Icon(Icons.close,
-                      color: Colors.white, size: 20),
+                  child: const Icon(Icons.close, color: Colors.white, size: 20),
                 ),
               ),
             ),
@@ -392,7 +357,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
     );
   }
 
-  // Citizen information card — নাম, email, phone দেখায়
   Widget _buildCitizenCard() {
     final name = _citizenProfile!['full_name'] as String? ??
         _citizenProfile!['email'] as String? ??
@@ -424,7 +388,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
     );
   }
 
-  // Assigned officer card — নাম, department, assign date দেখায়
   Widget _buildOfficerCard() {
     final name = _officerProfile!['full_name'] as String? ??
         _officerProfile!['email'] as String? ??
@@ -456,7 +419,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
     );
   }
 
-  // Status timeline widget — complaint এর সব status change history দেখায়
   Widget _buildTimeline() {
     return _card(
       child: Column(
@@ -472,7 +434,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
             const Text('No history yet.',
                 style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13))
           else
-            // প্রতিটি history entry timeline item হিসেবে দেখানো হচ্ছে
             ...List.generate(_history.length, (i) {
               final h = _history[i];
               final isLast = i == _history.length - 1;
@@ -486,14 +447,12 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                 children: [
                   Column(
                     children: [
-                      // Timeline dot — status color দিয়ে
                       Container(
                         width: 12,
                         height: 12,
-                        decoration: BoxDecoration(
-                            color: color, shape: BoxShape.circle),
+                        decoration:
+                            BoxDecoration(color: color, shape: BoxShape.circle),
                       ),
-                      // শেষ item ছাড়া connecting line দেখাবে
                       if (!isLast)
                         Container(
                             width: 2,
@@ -510,21 +469,17 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                         children: [
                           Row(
                             children: [
-                              // Status text
                               Text(hStatus,
                                   style: TextStyle(
                                       color: color,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 13)),
                               const Spacer(),
-                              // Date
                               Text(hDate,
                                   style: const TextStyle(
-                                      color: Color(0xFF9CA3AF),
-                                      fontSize: 11)),
+                                      color: Color(0xFF9CA3AF), fontSize: 11)),
                             ],
                           ),
-                          // Comment — থাকলে দেখাবে
                           if (hComment.isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Text(hComment,
@@ -543,8 +498,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
     );
   }
 
-  // Status update panel — শুধু Officer দেখতে পাবে
-  // Comment field ও status buttons দেখায়
   Widget _buildStatusUpdatePanel() {
     return _card(
       child: Column(
@@ -556,7 +509,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                   fontSize: 14,
                   color: Color(0xFF1F2937))),
           const SizedBox(height: 12),
-          // Optional comment field
           TextField(
             controller: _commentController,
             maxLines: 2,
@@ -576,28 +528,24 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          // Status buttons — প্রতিটি status এর জন্য একটি button
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: _statuses.map((s) {
-              // বর্তমান status হলে filled, না হলে outlined style
               final isCurrent = _complaint['status'] == s;
               final color = _statusColor(s);
+              final isThisUpdating = _updatingStatus == s;
               return GestureDetector(
-                // Update চলাকালীন tap disable থাকবে
                 onTap: _isUpdating ? null : () => _updateStatus(s),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isCurrent
-                        ? color
-                        : color.withOpacity(0.1),
+                    color: isCurrent ? color : color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: color.withOpacity(0.4)),
                   ),
-                  child: _isUpdating
+                  // শুধু tap করা button এ spinner দেখাবে
+                  child: isThisUpdating
                       ? SizedBox(
                           width: 14,
                           height: 14,
@@ -617,7 +565,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
     );
   }
 
-  // Reusable white card container widget
   Widget _card({required Widget child}) {
     return Container(
       width: double.infinity,
@@ -631,7 +578,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
     );
   }
 
-  // Icon ও text সহ একটি info row widget
   Widget _infoRow(IconData icon, String text) {
     return Row(
       children: [
@@ -639,13 +585,11 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
         const SizedBox(width: 8),
         Expanded(
             child: Text(text,
-                style: const TextStyle(
-                    color: Color(0xFF4B5563), fontSize: 13))),
+                style: const TextStyle(color: Color(0xFF4B5563), fontSize: 13))),
       ],
     );
   }
 
-  // Status অনুযায়ী রঙ return করার helper
   Color _statusColor(String status) {
     switch (status) {
       case 'In progress':
@@ -655,11 +599,10 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
       case 'Escalated':
         return const Color(0xFFDC2626);
       default:
-        return const Color(0xFF3B82F6); // New
+        return const Color(0xFF3B82F6);
     }
   }
 
-  // ISO date string কে 'Jan 5, 2024' format এ convert করার helper
   String _formatDate(String? iso) {
     if (iso == null) return '';
     final dt = DateTime.tryParse(iso);

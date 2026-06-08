@@ -1,12 +1,8 @@
-// Flutter material design import
 import 'package:flutter/material.dart';
-// Auth service — current user info এর জন্য
 import '../../services/supabase_service.dart';
-// Profile edit screen
+import '../../widgets/profile_avatar_widget.dart';
 import 'officer_edit_profile_screen.dart';
-// Address screen
 import 'officer_address_screen.dart';
-// Password change screen — citizen এর screen reuse করা হচ্ছে
 import '../citizen/change_password_screen.dart';
 
 // OfficerProfileScreen — Officer এর profile page
@@ -70,19 +66,8 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
       body: Column(
         children: [
           const SizedBox(height: 16),
-          // Circle avatar — নামের প্রথম অক্ষর দিয়ে
-          CircleAvatar(
-            radius: 44,
-            backgroundColor: const Color(0xFF1E40AF),
-            child: Text(
-              _userName.isNotEmpty ? _userName[0].toUpperCase() : 'O',
-              style: const TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ),
+          // Profile picture — editable false
+          ProfileAvatarWidget(userName: _userName, radius: 44),
           const SizedBox(height: 12),
           // Officer এর নাম
           Text(

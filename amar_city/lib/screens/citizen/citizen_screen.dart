@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/supabase_service.dart';
+import '../../widgets/profile_avatar_widget.dart';
 import 'citizen_profile.dart';
 import 'citizen_report.dart';
 import '../complaint_tracking/complaint_detail_screen.dart';
@@ -167,15 +168,9 @@ class _CitizenScreenState extends State<CitizenScreen> {
                   MaterialPageRoute(
                       builder: (context) => const CitizenProfileScreen()),
                 ),
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: const Icon(Icons.person_outline,
-                      color: Colors.white, size: 24),
+                child: ProfileAvatarWidget(
+                  userName: _userName,
+                  radius: 22,
                 ),
               ),
             ],
@@ -606,7 +601,7 @@ class _CitizenScreenState extends State<CitizenScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('#${c['complaint_id'] ?? ''}',
+                      Text('#${c['id'] ?? ''}',
                           style: TextStyle(
                               color: textSecondary,
                               fontSize: 11,

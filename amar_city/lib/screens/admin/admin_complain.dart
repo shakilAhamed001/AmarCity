@@ -101,13 +101,11 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     // dept match করে এমন + department null/empty এমন officers উভয়ই দেখাবে
     final deptOfficers = dept.isEmpty
         ? _allOfficers
-        : _allOfficers
-              .where((o) {
-                final oDept = (o['department'] as String? ?? '').trim();
-                // department match করলে অথবা officer এর department null/empty হলে দেখাবে
-                return oDept == dept.trim() || oDept.isEmpty;
-              })
-              .toList();
+        : _allOfficers.where((o) {
+            final oDept = (o['department'] as String? ?? '').trim();
+            // department match করলে অথবা officer এর department null/empty হলে দেখাবে
+            return oDept == dept.trim() || oDept.isEmpty;
+          }).toList();
     String? selectedOfficerId = complaint['assigned_officer_id'] as String?;
 
     await showDialog(
@@ -128,7 +126,8 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                   ),
                   items: deptOfficers.map((o) {
                     final oDept = (o['department'] as String? ?? '').trim();
-                    final name = (o['full_name'] ?? o['email'] ?? 'Officer').toString();
+                    final name = (o['full_name'] ?? o['email'] ?? 'Officer')
+                        .toString();
                     // department null হলে label এ জানিয়ে দেওয়া হচ্ছে
                     final label = oDept.isEmpty ? '$name (no dept)' : name;
                     return DropdownMenuItem<String>(
@@ -723,8 +722,18 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     final dt = DateTime.tryParse(iso);
     if (dt == null) return '';
     const m = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${m[dt.month - 1]} ${dt.day}';
   }

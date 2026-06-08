@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/supabase_service.dart';
+import '../../widgets/profile_avatar_widget.dart';
 
 // OfficerEditProfileScreen — Officer এর profile edit করার screen
 class OfficerEditProfileScreen extends StatefulWidget {
@@ -124,19 +125,11 @@ class _OfficerEditProfileScreenState extends State<OfficerEditProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            // Circle avatar — নামের প্রথম অক্ষর দিয়ে
             Center(
-              child: CircleAvatar(
+              child: ProfileAvatarWidget(
+                userName: _nameController.text,
                 radius: 50,
-                backgroundColor: const Color(0xFF1E40AF),
-                child: Text(
-                  userName.isNotEmpty ? userName[0].toUpperCase() : 'O',
-                  style: const TextStyle(
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                editable: true,
               ),
             ),
             const SizedBox(height: 32),

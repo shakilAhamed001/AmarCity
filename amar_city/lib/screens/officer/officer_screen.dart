@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/supabase_service.dart';
+import '../../widgets/profile_avatar_widget.dart';
 import '../complaint_tracking/complaint_detail_screen.dart';
 import '../notifications/notifications_screen.dart';
 import 'officer_profile.dart';
@@ -183,23 +184,16 @@ class _OfficerScreenState extends State<OfficerScreen> {
                 ],
               ),
               // Profile icon — tap করলে profile screen এ যাবে
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.person_outline,
-                      color: Colors.white, size: 24),
-                  onPressed: () async {
-                    await Navigator.of(context).push(MaterialPageRoute(
-                      builder: (context) => const OfficerProfileScreen(),
-                    ));
-                    // Profile screen থেকে ফিরে আসলে user info reload হবে
-                    _loadUser();
-                  },
+              GestureDetector(
+                onTap: () async {
+                  await Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => const OfficerProfileScreen(),
+                  ));
+                  _loadUser();
+                },
+                child: ProfileAvatarWidget(
+                  userName: _userName,
+                  radius: 22,
                 ),
               ),
             ],
@@ -359,7 +353,7 @@ class _OfficerScreenState extends State<OfficerScreen> {
                 children: [
                   // Complaint ID — citizen complaint হলে দেখাবে
                   if (isComplaint)
-                    Text('#${task['complaint_id'] ?? ''}',
+                    Text('#${task['id'] ?? ''}',
                         style: TextStyle(
                             color: textSecondary,
                             fontSize: 11,
@@ -475,14 +469,14 @@ class _OfficerScreenState extends State<OfficerScreen> {
   // Status অনুযায়ী রঙ return করার helper
   Color _statusColor(String status) {
     switch (status) {
-      case 'Urgent':
-        return const Color(0xFFDC2626);
-      case 'Review':
-        return const Color(0xFF3B82F6);
-      case 'Done':
-        return const Color(0xFF059669);
-      default:
+      case 'In progress':
         return const Color(0xFFF59E0B);
+      case 'Resolved':
+        return const Color(0xFF059669);
+      case 'Escalated':
+        return const Color(0xFFDC2626);
+      default:
+        return const Color(0xFF3B82F6); // New
     }
   }
 

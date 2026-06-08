@@ -1,9 +1,7 @@
-// Flutter material design import
 import 'package:flutter/material.dart';
-// Supabase auth এর UserAttributes এর জন্য
 import 'package:supabase_flutter/supabase_flutter.dart';
-// Supabase database ও auth service
 import '../../services/supabase_service.dart';
+import '../../widgets/profile_avatar_widget.dart';
 
 // EditProfileScreen — Citizen এর profile ও address edit করার screen
 class EditProfileScreen extends StatefulWidget {
@@ -174,18 +172,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            // Circle avatar — নামের প্রথম অক্ষর দিয়ে
+            // Profile picture — editable true, tap করলে photo change করা যাবে
             Center(
-              child: CircleAvatar(
+              child: ProfileAvatarWidget(
+                userName: _nameController.text,
                 radius: 50,
-                backgroundColor: const Color(0xFF1E40AF),
-                child: Text(
-                  userName.isNotEmpty ? userName[0].toUpperCase() : 'C',
-                  style: const TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white),
-                ),
+                editable: true,
               ),
             ),
             const SizedBox(height: 32),
