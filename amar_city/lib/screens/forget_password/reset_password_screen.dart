@@ -27,7 +27,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     final newPass = _newPasswordController.text;
     final confirmPass = _confirmPasswordController.text;
 
-    if (newPass.isEmpty || confirmPass.isEmpty) {//
+    if (newPass.isEmpty || confirmPass.isEmpty) {
+      //
       _showSnack('Please fill all fields');
       return;
     }

@@ -2,7 +2,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const String supabaseUrl = 'https://oljsrexiazknzdveaqkj.supabase.co';
-const String supabaseAnonKey = 'sb_publishable_uSHuEtUY-ehFPRC8duG6kQ_V6uurT1k';
+const String supabaseAnonKey =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sanNyZXhpYXprbnpkdmVhcWtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3Mzg4MDYsImV4cCI6MjA5MTMxNDgwNn0.gPP715G1GDHUXtgTXRLcpAYZZZA39k5EE3AvCY-Sbj0';
 
 // Global supabase client — যেকোনো file থেকে এটা দিয়ে database access করা যাবে
 final supabase = Supabase.instance.client;

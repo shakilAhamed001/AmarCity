@@ -3,6 +3,7 @@ import 'admin_overview.dart';
 import 'admin_users.dart';
 import 'admin_complain.dart';
 import 'admin_profile.dart';
+import 'export_report_screen.dart';
 import '../notifications/notifications_screen.dart';
 
 // AdminDashboard — Admin এর main screen, bottom navigation সহ
@@ -28,6 +29,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           const AdminOverview(),
           const AdminUsers(),
           const AdminComplaints(),
+          const ExportReportScreen(),
           const NotificationsScreen(viewerRole: 'Admin'),
           const AdminProfile(),
         ],
@@ -60,8 +62,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
               _buildNavItem(icon: Icons.dashboard_outlined, label: 'Overview', index: 0),
               _buildNavItem(icon: Icons.people_outline, label: 'Users', index: 1),
               _buildNavItem(icon: Icons.assignment_outlined, label: 'Complaints', index: 2),
-              _buildNavItem(icon: Icons.notifications_outlined, label: 'Alerts', index: 3),
-              _buildNavItem(icon: Icons.account_circle_outlined, label: 'Profile', index: 4),
+              _buildNavItem(icon: Icons.bar_chart_outlined, label: 'Reports', index: 3),
+              _buildNavItem(icon: Icons.notifications_outlined, label: 'Alerts', index: 4),
+              _buildNavItem(icon: Icons.account_circle_outlined, label: 'Profile', index: 5),
             ],
           ),
         ),

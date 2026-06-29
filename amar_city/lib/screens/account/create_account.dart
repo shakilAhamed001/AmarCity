@@ -28,6 +28,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
     'Trade License Issuance & Registration Department',
     'Waste Management Department',
     'Engineering Department',
+    'Power/Electricity Department',
   ];
 
   // Animation
@@ -119,6 +120,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
       ).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
       return;
     }
+    final email = _emailController.text.trim();
+    final emailRegex = RegExp(r'^[\w.+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$');
+    if (!emailRegex.hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid email address')),
+      );
+      return;
+    }
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(
         context,
@@ -151,8 +160,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
         String message = e.toString();
         if (message.contains('user_already_exists') ||
             message.contains('User already registered')) {
-          message =
-              'This email is already registered. Please verify your email or login.';
+          message = 'This email is already registered. Please verify your email or login.';
+        } else if (message.contains('email_address_invalid') ||
+            message.contains('is invalid')) {
+          message = 'Invalid email address. Please enter a valid email.';
         }
         ScaffoldMessenger.of(
           context,

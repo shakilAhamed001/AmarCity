@@ -33,6 +33,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     'Waste Management Department',
     'Public Health & Sanitation Department',
     'Trade License Issuance & Registration Department',
+    'Power/Electricity Department',
   ];
 
   @override
@@ -682,37 +683,27 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     }
   }
 
-  // Category অনুযায়ী icon return করার helper
   IconData _categoryIcon(String category) {
     switch (category) {
-      case 'ROAD':
-        return Icons.warning_amber;
-      case 'LIGHTING':
-        return Icons.lightbulb_outline;
-      case 'GARBAGE':
-        return Icons.delete_outline;
+      case 'ROAD':        return Icons.warning_amber;
+      case 'LIGHTING':    return Icons.lightbulb_outline;
+      case 'GARBAGE':     return Icons.delete_outline;
       case 'DRAINAGE':
-      case 'WATER':
-        return Icons.water_drop_outlined;
-      default:
-        return Icons.report_outlined;
+      case 'WATER':       return Icons.water_drop_outlined;
+      case 'ELECTRICITY': return Icons.electric_bolt_outlined;
+      default:            return Icons.report_outlined;
     }
   }
 
-  // Category অনুযায়ী রঙ return করার helper
   Color _categoryColor(String category) {
     switch (category) {
       case 'ROAD':
-      case 'LIGHTING':
-        return const Color(0xFFFCD34D);
-      case 'GARBAGE':
-        return const Color(0xFF6B7280);
-      case 'DRAINAGE':
-        return const Color(0xFF3B82F6);
-      case 'WATER':
-        return const Color(0xFF60A5FA);
-      default:
-        return const Color(0xFF9CA3AF);
+      case 'LIGHTING':    return const Color(0xFFFCD34D);
+      case 'GARBAGE':     return const Color(0xFF6B7280);
+      case 'DRAINAGE':    return const Color(0xFF3B82F6);
+      case 'WATER':       return const Color(0xFF60A5FA);
+      case 'ELECTRICITY': return const Color(0xFFF97316);
+      default:            return const Color(0xFF9CA3AF);
     }
   }
 

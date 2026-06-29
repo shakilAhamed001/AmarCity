@@ -80,9 +80,8 @@ class _ProfileAvatarWidgetState extends State<ProfileAvatarWidget> {
       if (mounted) setState(() => _avatarUrl = freshUrl);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Upload failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _uploading = false);

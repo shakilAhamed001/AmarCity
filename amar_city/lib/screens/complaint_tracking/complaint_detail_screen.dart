@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../services/supabase_service.dart';
 import '../../services/notification_service.dart';
+import '../citizen/feedback_screen.dart';
+import 'complaint_report_screen.dart';
 
 class ComplaintDetailScreen extends StatefulWidget {
   final Map<String, dynamic> complaint;
@@ -21,10 +23,12 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
   List<Map<String, dynamic>> _history = [];
   Map<String, dynamic>? _officerProfile;
   Map<String, dynamic>? _citizenProfile;
+  Map<String, dynamic>? _feedback; // Admin/Officer এর জন্য feedback data
   bool _isLoading = true;
   bool _isUpdating = false;
-  String? _updatingStatus; // কোন status button এ spinner দেখাবে track করার জন্য
+  String? _updatingStatus;
   final _commentController = TextEditingController();
+  bool _feedbackSubmitted = false; // feedback দেওয়া হয়েছে কিনা track করার জন্য
 
   static const _statuses = ['New', 'In progress', 'Resolved'];
 
@@ -47,6 +51,27 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
     try {
       _history = await NotificationService.fetchStatusHistory(
           _complaint['id'].toString());
+
+      // Citizen হলে আগে feedback দেওয়া হয়েছে কিনা check করা
+      if (widget.viewerRole == 'Citizen') {
+        final fb = await supabase
+            .from('complaint_feedback')
+            .select()
+            .eq('complaint_id', _complaint['id'].toString())
+            .eq('citizen_id', AuthService.currentUser!.id)
+            .maybeSingle();
+        _feedbackSubmitted = fb != null;
+      }
+
+      // Admin ও Officer এর জন্য feedback data load করা
+      if (widget.viewerRole == 'Admin' || widget.viewerRole == 'Officer') {
+        final fb = await supabase
+            .from('complaint_feedback')
+            .select()
+            .eq('complaint_id', _complaint['id'].toString())
+            .maybeSingle();
+        _feedback = fb != null ? Map<String, dynamic>.from(fb) : null;
+      }
 
       // Officer profile — null safe check
       final officerId = _complaint['assigned_officer_id']?.toString();
@@ -107,10 +132,15 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
 
       final citizenId = _complaint['citizen_id']?.toString();
       if (citizenId != null) {
+        final statusMsg = newStatus == 'Resolved'
+            ? 'Your complaint "${_complaint['title']}" has been resolved! ✅'
+            : newStatus == 'In progress'
+                ? 'Your complaint "${_complaint['title']}" is now being worked on. 🔧'
+                : 'Your complaint "${_complaint['title']}" status changed to $newStatus.';
         await NotificationService.send(
           userId: citizenId,
           title: 'Complaint Status Updated',
-          body: 'Your complaint "${_complaint['title']}" is now $newStatus.',
+          body: statusMsg,
           type: 'status_update',
           complaintId: complaintId,
         );
@@ -195,10 +225,48 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                   _buildTimeline(),
                   const SizedBox(height: 16),
                   if (widget.viewerRole == 'Officer') _buildStatusUpdatePanel(),
+                  if (widget.viewerRole == 'Admin') _buildViewReportButton(),
+                  if (widget.viewerRole == 'Citizen' &&
+                      _complaint['status'] == 'Resolved')
+                    _buildFeedbackButton(),
+                  if ((widget.viewerRole == 'Admin' ||
+                          widget.viewerRole == 'Officer') &&
+                      _feedback != null) ...[
+                    const SizedBox(height: 16),
+                    _buildFeedbackCard(),
+                  ],
                   const SizedBox(height: 24),
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildViewReportButton() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: SizedBox(
+        width: double.infinity,
+        height: 46,
+        child: OutlinedButton.icon(
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) =>
+                ComplaintReportScreen(complaint: _complaint),
+          )),
+          icon: const Icon(Icons.assessment_outlined,
+              color: Color(0xFF1E40AF), size: 18),
+          label: const Text('View Full Report',
+              style: TextStyle(
+                  color: Color(0xFF1E40AF),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14)),
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: Color(0xFF1E40AF)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
+          ),
+        ),
+      ),
     );
   }
 
@@ -563,6 +631,157 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
         ],
       ),
     );
+  }
+
+  // Feedback button — Citizen + Resolved complaint এ দেখাবে
+  Widget _buildFeedbackButton() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: _feedbackSubmitted
+          ? Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF059669).withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: const Color(0xFF059669).withOpacity(0.3)),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.check_circle,
+                      color: Color(0xFF059669), size: 18),
+                  SizedBox(width: 8),
+                  Text('Feedback Submitted',
+                      style: TextStyle(
+                          color: Color(0xFF059669),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14)),
+                ],
+              ),
+            )
+          : SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final result = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          FeedbackScreen(complaint: _complaint),
+                    ),
+                  );
+                  // feedback submit হলে state update করা
+                  if (result == true && mounted) {
+                    setState(() => _feedbackSubmitted = true);
+                  }
+                },
+                icon: const Icon(Icons.star_outline_rounded,
+                    color: Colors.white, size: 20),
+                label: const Text('Rate & Give Feedback',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E40AF),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+              ),
+            ),
+    );
+  }
+
+  // Feedback card — Admin ও Officer এর জন্য citizen এর দেওয়া rating দেখাবে
+  Widget _buildFeedbackCard() {
+    final rating = _feedback!['rating'] as int? ?? 0;
+    final comment = _feedback!['comment'] as String? ?? '';
+    final date = _formatDate(_feedback!['created_at'] as String?);
+
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.star_rounded,
+                  color: Color(0xFFFBBF24), size: 18),
+              const SizedBox(width: 6),
+              const Text('Citizen Feedback',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Color(0xFF1F2937))),
+              const Spacer(),
+              Text(date,
+                  style: const TextStyle(
+                      color: Color(0xFF9CA3AF), fontSize: 11)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Star row
+          Row(
+            children: List.generate(5, (i) {
+              final star = i + 1;
+              return Icon(
+                star <= rating
+                    ? Icons.star_rounded
+                    : Icons.star_outline_rounded,
+                size: 28,
+                color: star <= rating
+                    ? const Color(0xFFFBBF24)
+                    : const Color(0xFFD1D5DB),
+              );
+            }),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _ratingLabel(rating),
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _ratingColor(rating)),
+          ),
+          if (comment.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
+              child: Text(comment,
+                  style: const TextStyle(
+                      color: Color(0xFF4B5563),
+                      fontSize: 13,
+                      height: 1.4)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _ratingLabel(int rating) {
+    switch (rating) {
+      case 1: return 'Very Dissatisfied 😞';
+      case 2: return 'Dissatisfied 😕';
+      case 3: return 'Neutral 😐';
+      case 4: return 'Satisfied 😊';
+      case 5: return 'Very Satisfied 🎉';
+      default: return '';
+    }
+  }
+
+  Color _ratingColor(int rating) {
+    if (rating <= 2) return const Color(0xFFDC2626);
+    if (rating == 3) return const Color(0xFFF59E0B);
+    return const Color(0xFF059669);
   }
 
   Widget _card({required Widget child}) {

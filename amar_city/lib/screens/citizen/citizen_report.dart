@@ -28,11 +28,12 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
 
   // Available complaint categories
   final List<Map<String, dynamic>> _categories = [
-    {'name': 'ROAD', 'label': 'Road', 'icon': Icons.warning_amber, 'color': Color(0xFFFCD34D)},
-    {'name': 'LIGHTING', 'label': 'Lighting', 'icon': Icons.lightbulb_outline, 'color': Color(0xFFFCD34D)},
-    {'name': 'GARBAGE', 'label': 'Garbage', 'icon': Icons.delete_outline, 'color': Color(0xFF6B7280)},
-    {'name': 'DRAINAGE', 'label': 'Drainage', 'icon': Icons.water_drop_outlined, 'color': Color(0xFF3B82F6)},
-    {'name': 'WATER', 'label': 'Water', 'icon': Icons.water_drop_outlined, 'color': Color(0xFF60A5FA)},
+    {'name': 'ROAD',        'label': 'Road',        'icon': Icons.warning_amber,          'color': Color(0xFFFCD34D)},
+    {'name': 'LIGHTING',    'label': 'Lighting',    'icon': Icons.lightbulb_outline,       'color': Color(0xFFFCD34D)},
+    {'name': 'GARBAGE',     'label': 'Garbage',     'icon': Icons.delete_outline,          'color': Color(0xFF6B7280)},
+    {'name': 'DRAINAGE',    'label': 'Drainage',    'icon': Icons.water_drop_outlined,     'color': Color(0xFF3B82F6)},
+    {'name': 'WATER',       'label': 'Water',       'icon': Icons.water_drop_outlined,     'color': Color(0xFF60A5FA)},
+    {'name': 'ELECTRICITY', 'label': 'Electricity', 'icon': Icons.electric_bolt_outlined,  'color': Color(0xFFF97316)},
   ];
 
   @override
@@ -46,12 +47,13 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
 
   // Category অনুযায়ী কোন department এ complaint যাবে তা নির্ধারণ
   static const Map<String, String> _categoryDepartment = {
-    'ROAD':     'Engineering Department',
-    'LIGHTING': 'Engineering Department',
-    'GARBAGE':  'Waste Management Department',
-    'DRAINAGE': 'Waste Management Department',
-    'WATER':    'Public Health & Sanitation Department',
-    'OTHER':    'Engineering Department',
+    'ROAD':        'Engineering Department',
+    'LIGHTING':    'Engineering Department',
+    'GARBAGE':     'Waste Management Department',
+    'DRAINAGE':    'Waste Management Department',
+    'WATER':       'Public Health & Sanitation Department',
+    'ELECTRICITY': 'Power/Electricity Department',
+    'OTHER':       'Engineering Department',
   };
 
   Future<void> _submitComplaint() async {
@@ -84,8 +86,9 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
                 upsert: true,
               ),
             );
-        final url =
-            'https://oljsrexiazknzdveaqkj.supabase.co/storage/v1/object/public/complaint-images/$fileName';
+        final url = supabase.storage
+            .from('complaint-images')
+            .getPublicUrl(fileName);
         imageUrls.add(url);
       }
 

@@ -480,43 +480,29 @@ class _OfficerScreenState extends State<OfficerScreen> {
     }
   }
 
-  // Category অনুযায়ী icon return করার helper
   IconData _categoryIcon(String category) {
     switch (category) {
-      case 'ROAD':
-        return Icons.warning_outlined;
-      case 'WATER':
-        return Icons.water_drop_outlined;
-      case 'LIGHTING':
-        return Icons.lightbulb_outline;
-      case 'GARBAGE':
-        return Icons.delete_outline;
-      case 'DRAINAGE':
-        return Icons.water_drop_outlined;
-      case 'LICENSE':
-        return Icons.description_outlined;
-      default:
-        return Icons.task_outlined;
+      case 'ROAD':        return Icons.warning_outlined;
+      case 'WATER':       return Icons.water_drop_outlined;
+      case 'LIGHTING':    return Icons.lightbulb_outline;
+      case 'GARBAGE':     return Icons.delete_outline;
+      case 'DRAINAGE':    return Icons.water_drop_outlined;
+      case 'ELECTRICITY': return Icons.electric_bolt_outlined;
+      case 'LICENSE':     return Icons.description_outlined;
+      default:            return Icons.task_outlined;
     }
   }
 
-  // Category অনুযায়ী রঙ return করার helper
   Color _categoryColor(String category) {
     switch (category) {
-      case 'ROAD':
-        return const Color(0xFFDC2626);
-      case 'WATER':
-        return const Color(0xFF3B82F6);
-      case 'LIGHTING':
-        return const Color(0xFFFCD34D);
-      case 'GARBAGE':
-        return const Color(0xFF6B7280);
-      case 'DRAINAGE':
-        return const Color(0xFF60A5FA);
-      case 'LICENSE':
-        return const Color(0xFF8B5CF6);
-      default:
-        return const Color(0xFF9CA3AF);
+      case 'ROAD':        return const Color(0xFFDC2626);
+      case 'WATER':       return const Color(0xFF3B82F6);
+      case 'LIGHTING':    return const Color(0xFFFCD34D);
+      case 'GARBAGE':     return const Color(0xFF6B7280);
+      case 'DRAINAGE':    return const Color(0xFF60A5FA);
+      case 'ELECTRICITY': return const Color(0xFFF97316);
+      case 'LICENSE':     return const Color(0xFF8B5CF6);
+      default:            return const Color(0xFF9CA3AF);
     }
   }
 }

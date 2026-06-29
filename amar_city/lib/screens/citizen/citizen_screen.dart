@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/supabase_service.dart';
+import '../../services/notification_service.dart';
 import '../../widgets/profile_avatar_widget.dart';
 import 'citizen_profile.dart';
 import 'citizen_report.dart';
@@ -32,16 +34,62 @@ class _CitizenScreenState extends State<CitizenScreen> {
   int _resolvedCount = 0;
   int _escalatedCount = 0;
 
+  // Unread notification count — bottom nav badge এর জন্য
+  int _unreadCount = 0;
+  RealtimeChannel? _notifChannel;
+
   @override
   void initState() {
     super.initState();
-    // Login করা user এর নাম load করা হচ্ছে
     final user = AuthService.currentUser;
     if (user != null) {
       _userName = user.userMetadata?['full_name'] ?? 'Citizen';
     }
-    // Complaints fetch করা হচ্ছে
     _fetchComplaints();
+    _fetchUnreadCount();
+    _subscribeNotifications();
+  }
+
+  @override
+  void dispose() {
+    _notifChannel?.unsubscribe();
+    super.dispose();
+  }
+
+  // Unread notification count fetch করার function
+  Future<void> _fetchUnreadCount() async {
+    final user = AuthService.currentUser;
+    if (user == null) return;
+    try {
+      final data = await NotificationService.fetchForUser(user.id);
+      if (mounted) {
+        setState(() {
+          _unreadCount = data.where((n) => n['is_read'] == false).length;
+        });
+      }
+    } catch (_) {}
+  }
+
+  // Realtime — নতুন notification আসলে badge count বাড়াবে
+  void _subscribeNotifications() {
+    final user = AuthService.currentUser;
+    if (user == null) return;
+    _notifChannel = supabase
+        .channel('citizen_notif:${user.id}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: user.id,
+          ),
+          callback: (payload) {
+            if (mounted) setState(() => _unreadCount++);
+          },
+        )
+        .subscribe();
   }
 
   // Supabase থেকে এই citizen এর সব complaint fetch করার function
@@ -686,6 +734,14 @@ class _CitizenScreenState extends State<CitizenScreen> {
                 builder: (context) => const CitizenProfileScreen()));
             return;
           }
+          if (index == 2) {
+            // Notifications tab tap করলে count reset করা হচ্ছে
+            setState(() {
+              _unreadCount = 0;
+              _selectedIndex = 2;
+            });
+            return;
+          }
           setState(() => _selectedIndex = index);
         },
         type: BottomNavigationBarType.fixed,
@@ -703,9 +759,35 @@ class _CitizenScreenState extends State<CitizenScreen> {
                   _selectedIndex == 1 ? Icons.edit : Icons.edit_outlined),
               label: 'Report'),
           BottomNavigationBarItem(
-              icon: Icon(_selectedIndex == 2
-                  ? Icons.notifications
-                  : Icons.notifications_outlined),
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(_selectedIndex == 2
+                      ? Icons.notifications
+                      : Icons.notifications_outlined),
+                  if (_unreadCount > 0)
+                    Positioned(
+                      right: -4,
+                      top: -4,
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFDC2626),
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                        child: Text(
+                          _unreadCount > 99 ? '99+' : '$_unreadCount',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               label: 'Notifications'),
           BottomNavigationBarItem(
               icon: Icon(

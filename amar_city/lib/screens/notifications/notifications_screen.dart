@@ -272,27 +272,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  // Notification type অনুযায়ী রঙ return করার helper
   Color _typeColor(String type) {
     switch (type) {
-      case 'assignment':
-        return const Color(0xFF7C3AED); // বেগুনি — assignment
-      case 'status_update':
-        return const Color(0xFF059669); // সবুজ — status update
-      default:
-        return const Color(0xFF3B82F6); // নীল — default
+      case 'assignment':    return const Color(0xFF7C3AED);
+      case 'status_update': return const Color(0xFF059669);
+      case 'feedback':      return const Color(0xFFFBBF24);
+      default:              return const Color(0xFF3B82F6);
     }
   }
 
-  // Notification type অনুযায়ী icon return করার helper
   IconData _typeIcon(String type) {
     switch (type) {
-      case 'assignment':
-        return Icons.assignment_ind_outlined;
-      case 'status_update':
-        return Icons.update_outlined;
-      default:
-        return Icons.notifications_outlined;
+      case 'assignment':    return Icons.assignment_ind_outlined;
+      case 'status_update': return Icons.update_outlined;
+      case 'feedback':      return Icons.star_outline_rounded;
+      default:              return Icons.notifications_outlined;
     }
   }
 
