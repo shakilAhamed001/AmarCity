@@ -1,3 +1,6 @@
+// SplashScreen — app শুরুতে দেখানো animated intro screen
+// City skyline, twinkling stars, flying birds, shimmer text সহ প্রাণবন্ত animation
+// 4 সেকেন্ড পর অটোমেটিকালি login screen এ navigate করে
 import 'dart:math';
 import 'package:flutter/material.dart';
 
@@ -11,6 +14,7 @@ class SplashScreen extends StatefulWidget {
 // ─────────────────────────────────────────────
 // COLORS
 // ─────────────────────────────────────────────
+// App এ ব্যবহৃত color constants এক জায়গায় রাখা হয়েছে
 class _C {
   static const bg = Color(0xFF001F5C);
   static const primary = Color(0xFFFFFFFF);
@@ -75,11 +79,13 @@ class _SplashScreenState extends State<SplashScreen>
     _navigateToHome();
   }
 
+  // 4 সেকেন্ড পর login screen এ navigate করার function
   Future<void> _navigateToHome() async {
     await Future.delayed(const Duration(seconds: 4));
     if (mounted) Navigator.of(context).pushReplacementNamed('/login');
   }
 
+  // Floating color particles তৈরি করা — background ডেকোরেশন
   void _buildParticles() {
     final colors = [
       const Color(0xFF534AB7),
@@ -99,6 +105,7 @@ class _SplashScreenState extends State<SplashScreen>
     }
   }
 
+  // Twinkling star data তৈরি করা
   void _buildStars() {
     for (int i = 0; i < 60; i++) {
       _stars.add(
@@ -112,6 +119,7 @@ class _SplashScreenState extends State<SplashScreen>
     }
   }
 
+  // Flying bird data তৈরি করা
   void _buildBirds() {
     for (int i = 0; i < 6; i++) {
       _birds.add(
@@ -126,6 +134,7 @@ class _SplashScreenState extends State<SplashScreen>
     }
   }
 
+  // সব অ্যানিমেশন controllers ও animations setup করা
   void _setupAnimations() {
     _iconCtrl = AnimationController(
       vsync: this,
@@ -263,6 +272,7 @@ class _SplashScreenState extends State<SplashScreen>
     ).animate(CurvedAnimation(parent: _wingCtrl, curve: Curves.easeInOut));
   }
 
+  // বিভিন্ন animation পর্যায়ক্রমে start করা
   Future<void> _startSequence() async {
     await Future.delayed(const Duration(milliseconds: 200));
     _iconCtrl.forward();
@@ -515,6 +525,7 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
+  // Pulse ring widget — স্কেল ও opacity animated
   Widget _buildRing(double delay) {
     final t = (_ringCtrl.value + delay) % 1.0;
     final opacity = (1.0 - t) * 0.08;
@@ -538,6 +549,7 @@ class _SplashScreenState extends State<SplashScreen>
 // APP ICON
 // ─────────────────────────────────────────────
 
+// App logo icon widget — splash screen এর মাঝখানে দেখায়
 class _AppIcon extends StatelessWidget {
   const _AppIcon();
 
@@ -561,6 +573,7 @@ class _AppIcon extends StatelessWidget {
   }
 }
 
+// Logo এর ভেতরে city buildings এঁকার CustomPainter
 class _CityLogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -678,6 +691,7 @@ class _BirdPainter extends CustomPainter {
 // CITY SKYLINE
 // ─────────────────────────────────────────────
 
+// City skyline background এঁকার CustomPainter — buildings + windows + trees
 class _CitySkylinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -768,6 +782,7 @@ class _CitySkylinePainter extends CustomPainter {
     _drawTree(canvas, w * 0.30, h * 0.74, 11, w);
   }
 
+  // একটি pine tree এঁকার helper — trunk + layered triangles
   void _drawTree(Canvas canvas, double x, double baseY, double size, double w) {
     final trunkPaint = Paint()
       ..style = PaintingStyle.fill

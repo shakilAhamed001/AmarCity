@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'admin_overview.dart';
 import 'admin_users.dart';
@@ -5,8 +6,8 @@ import 'admin_complain.dart';
 import 'admin_profile.dart';
 import 'export_report_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../../services/escalation_service.dart';
 
-// AdminDashboard — Admin এর main screen, bottom navigation সহ
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
 
@@ -15,8 +16,26 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  // বর্তমানে কোন tab selected আছে তা track করে — শুরুতে 0 (Overview)
   int _selectedTab = 0;
+  Timer? _escalationTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Admin login করলেই প্রথমবার check
+    EscalationService.checkAndEscalate();
+    // এরপর প্রতি ৩০ মিনিটে automatically check করবে
+    _escalationTimer = Timer.periodic(
+      const Duration(minutes: 30),
+      (_) => EscalationService.checkAndEscalate(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _escalationTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

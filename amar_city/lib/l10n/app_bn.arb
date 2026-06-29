@@ -1,0 +1,88 @@
+{
+  "@@locale": "bn",
+
+  "appName": "আমার শহর",
+  "smartMunicipalityPlatform": "স্মার্ট পৌরসভা প্ল্যাটফর্ম",
+
+  "welcomeBack": "স্বাগতম",
+  "signInToDashboard": "আপনার নাগরিক ড্যাশবোর্ডে লগইন করুন",
+  "emailAddress": "ইমেইল ঠিকানা",
+  "password": "পাসওয়ার্ড",
+  "emailHint": "rahim@example.com",
+  "passwordHint": "আপনার পাসওয়ার্ড দিন",
+  "forgotPassword": "পাসওয়ার্ড ভুলে গেছেন?",
+  "signIn": "নিরাপদে লগইন করুন",
+  "orContinueWith": "অথবা চালিয়ে যান",
+  "newToAmarCity": "নতুন ব্যবহারকারী? ",
+  "createAccount": "অ্যাকাউন্ট তৈরি করুন",
+  "pleaseEnterAllFields": "সব তথ্য পূরণ করুন",
+  "invalidCredentials": "ইমেইল বা পাসওয়ার্ড সঠিক নয়।",
+  "verifyEmail": "প্রথমে আপনার ইমেইল যাচাই করুন। ইনবক্স চেক করুন।",
+
+  "goodMorning": "শুভ সকাল,",
+  "totalReports": "মোট\nঅভিযোগ",
+  "inProgress": "চলমান",
+  "resolved": "সমাধান",
+  "escalated": "এস্কালেটেড",
+
+  "quickActions": "দ্রুত কাজ",
+  "reportIssue": "অভিযোগ দিন",
+  "submitNewComplaint": "নতুন অভিযোগ জমা দিন",
+  "myComplaints": "আমার অভিযোগ",
+  "viewAndTrackAll": "সব দেখুন ও ট্র্যাক করুন",
+  "liveTracking": "লাইভ ট্র্যাকিং",
+  "checkComplaintMap": "অভিযোগের মানচিত্র দেখুন",
+  "cityStats": "শহরের পরিসংখ্যান",
+  "publicAnalytics": "পাবলিক বিশ্লেষণ",
+
+  "recentComplaints": "সাম্প্রতিক অভিযোগ",
+  "seeAll": "সব দেখুন >",
+  "noComplaintsYet": "এখনো কোনো অভিযোগ নেই।",
+  "noFilteredComplaints": "কোনো {status} অভিযোগ নেই।",
+  "@noFilteredComplaints": {
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+
+  "home": "হোম",
+  "report": "রিপোর্ট",
+  "notifications": "বিজ্ঞপ্তি",
+  "profile": "প্রোফাইল",
+  "unassigned": "নির্ধারিত নয়",
+  "officer": "অফিসার",
+
+  "complaints": "অভিযোগ",
+  "totalComplaints": "মোট {count}টি অভিযোগ",
+  "@totalComplaints": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "searchComplaint": "অভিযোগ বা স্থান খুঁজুন...",
+  "all": "সব",
+  "statusNew": "নতুন",
+  "assignOfficer": "অফিসার নির্ধারণ",
+  "assign": "নির্ধারণ করুন",
+  "reassign": "পুনরায় নির্ধারণ >",
+  "assignBtn": "নির্ধারণ >",
+  "cancel": "বাতিল",
+  "selectOfficer": "অফিসার বাছুন",
+  "noOfficersFound": "\"{dept}\" এর জন্য কোনো অফিসার পাওয়া যায়নি",
+  "@noOfficersFound": {
+    "placeholders": {
+      "dept": { "type": "String" }
+    }
+  },
+  "officerAssigned": "অফিসার নির্ধারিত ও বিজ্ঞপ্তি পাঠানো হয়েছে!",
+  "autoEscalated": "স্বয়ংক্রিয় এস্কালেশন: ৪৮+ ঘণ্টায় কোনো আপডেট নেই",
+
+  "overview": "সংক্ষিপ্ত",
+  "users": "ব্যবহারকারী",
+  "reports": "রিপোর্ট",
+  "alerts": "সতর্কতা",
+
+  "language": "ভাষা",
+  "english": "English",
+  "bangla": "বাংলা"
+}

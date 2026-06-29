@@ -1,0 +1,88 @@
+{
+  "@@locale": "en",
+
+  "appName": "AmarCity",
+  "smartMunicipalityPlatform": "SMART MUNICIPALITY PLATFORM",
+
+  "welcomeBack": "Welcome back",
+  "signInToDashboard": "Sign in to your civic dashboard",
+  "emailAddress": "EMAIL ADDRESS",
+  "password": "PASSWORD",
+  "emailHint": "rahim@example.com",
+  "passwordHint": "Enter your password",
+  "forgotPassword": "Forgot Password?",
+  "signIn": "Sign in securely",
+  "orContinueWith": "or continue with",
+  "newToAmarCity": "New to AmarCity? ",
+  "createAccount": "Create account",
+  "pleaseEnterAllFields": "Please fill all fields",
+  "invalidCredentials": "Invalid email or password.",
+  "verifyEmail": "Please verify your email first. Check your inbox.",
+
+  "goodMorning": "Good morning,",
+  "totalReports": "Total\nReports",
+  "inProgress": "In\nProgress",
+  "resolved": "Resolved",
+  "escalated": "Escalated",
+
+  "quickActions": "Quick actions",
+  "reportIssue": "Report issue",
+  "submitNewComplaint": "Submit new complaint",
+  "myComplaints": "My complaints",
+  "viewAndTrackAll": "View & track all",
+  "liveTracking": "Live tracking",
+  "checkComplaintMap": "Check complaint map",
+  "cityStats": "City stats",
+  "publicAnalytics": "Public analytics",
+
+  "recentComplaints": "Recent complaints",
+  "seeAll": "See all >",
+  "noComplaintsYet": "No complaints yet.",
+  "noFilteredComplaints": "No {status} complaints.",
+  "@noFilteredComplaints": {
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+
+  "home": "Home",
+  "report": "Report",
+  "notifications": "Notifications",
+  "profile": "Profile",
+  "unassigned": "Unassigned",
+  "officer": "Officer",
+
+  "complaints": "Complaints",
+  "totalComplaints": "{count} total complaints",
+  "@totalComplaints": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "searchComplaint": "Search complaint or location...",
+  "all": "All",
+  "statusNew": "New",
+  "assignOfficer": "Assign Officer",
+  "assign": "Assign",
+  "reassign": "Reassign >",
+  "assignBtn": "Assign >",
+  "cancel": "Cancel",
+  "selectOfficer": "Select Officer",
+  "noOfficersFound": "No officers found for \"{dept}\"",
+  "@noOfficersFound": {
+    "placeholders": {
+      "dept": { "type": "String" }
+    }
+  },
+  "officerAssigned": "Officer assigned & notified!",
+  "autoEscalated": "Auto-Escalated: No update for 48+ hours",
+
+  "overview": "Overview",
+  "users": "Users",
+  "reports": "Reports",
+  "alerts": "Alerts",
+
+  "language": "Language",
+  "english": "English",
+  "bangla": "বাংলা"
+}

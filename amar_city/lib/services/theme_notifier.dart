@@ -1,22 +1,22 @@
-// Flutter material design import
+// ThemeNotifier — Dark/Light mode toggle এর জন্য singleton ChangeNotifier
+// Singleton pattern ব্যবহার করা হয়েছে যাতে পুরো app এ একটাই instance থাকে
+
 import 'package:flutter/material.dart';
 
-// ThemeNotifier — Dark/Light mode toggle এর জন্য singleton class
 class ThemeNotifier extends ChangeNotifier {
-  // Singleton pattern — পুরো app এ একটাই instance থাকবে
+  // Singleton — factory constructor প্রতিবার same instance return করে
   static final ThemeNotifier _instance = ThemeNotifier._internal();
   factory ThemeNotifier() => _instance;
   ThemeNotifier._internal();
 
-  // বর্তমানে dark mode চালু আছে কিনা — শুরুতে false (light mode)
+  // বর্তমান theme state — false মানে light mode (default)
   bool _isDark = false;
   bool get isDark => _isDark;
 
-  // Dark/Light mode switch করার function
-  // toggle() call করলে mode পরিবর্তন হবে এবং listeners notify হবে
+  // Dark ও Light mode এর মধ্যে toggle করার function
+  // Call হলে সব listener কে notify করা হয় → MaterialApp rebuild হয়
   void toggle() {
     _isDark = !_isDark;
-    // সব listener কে জানানো হচ্ছে যে theme পরিবর্তন হয়েছে
     notifyListeners();
   }
 }

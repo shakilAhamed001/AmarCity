@@ -1,10 +1,13 @@
+// NotificationService — সব in-app notification সংক্রান্ত database operations এখানে
+// notifications ও complaint_status_history table এর সাথে interact করে
+
 import 'supabase_service.dart';
 
-// NotificationService — notification সংক্রান্ত সব database কাজ এখানে
 class NotificationService {
   // নির্দিষ্ট user কে একটি notification পাঠানোর function
-  // userId — যাকে notification পাঠাবে
-  // type — 'assignment' বা 'status_update'
+  // [userId]   — যাকে notification পাঠাবে
+  // [type]     — 'assignment' | 'status_update' | 'escalation' | 'feedback'
+  // [complaintId] — কোন complaint এর সাথে সম্পর্কিত
   static Future<void> send({
     required String userId,
     required String title,
@@ -18,12 +21,11 @@ class NotificationService {
       'body': body,
       'type': type,
       'complaint_id': complaintId,
-      // নতুন notification শুরুতে unread থাকে
-      'is_read': false,
+      'is_read': false, // নতুন notification সবসময় unread শুরু হয়
     });
   }
 
-  // নির্দিষ্ট user এর সব notification fetch করার function — নতুন আগে
+  // নির্দিষ্ট user এর সব notification fetch করা — সবচেয়ে নতুন আগে
   static Future<List<Map<String, dynamic>>> fetchForUser(String userId) async {
     final data = await supabase
         .from('notifications')
@@ -33,21 +35,22 @@ class NotificationService {
     return List<Map<String, dynamic>>.from(data);
   }
 
-  // একটি notification কে read হিসেবে mark করার function
+  // একটি notification read হিসেবে mark করা
   static Future<void> markRead(String notificationId) async {
     await supabase
         .from('notifications')
         .update({'is_read': true}).eq('id', notificationId);
   }
 
-  // একজন user এর সব notification কে read হিসেবে mark করার function
+  // একজন user এর সব notification একসাথে read mark করা
   static Future<void> markAllRead(String userId) async {
     await supabase
         .from('notifications')
         .update({'is_read': true}).eq('user_id', userId);
   }
 
-  // Complaint এর status history তে একটি নতুন entry যোগ করার function
+  // Complaint এর status history তে নতুন entry যোগ করা
+  // [updatedBy] — officer id বা 'system' (auto-escalation এর ক্ষেত্রে)
   static Future<void> addStatusHistory({
     required String complaintId,
     required String status,
@@ -62,7 +65,7 @@ class NotificationService {
     });
   }
 
-  // একটি complaint এর সম্পূর্ণ status history fetch করার function — পুরনো আগে
+  // একটি complaint এর সম্পূর্ণ status history fetch করা — পুরনো আগে (timeline এর জন্য)
   static Future<List<Map<String, dynamic>>> fetchStatusHistory(
       String complaintId) async {
     final data = await supabase

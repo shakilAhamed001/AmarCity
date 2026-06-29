@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:amar_city/l10n/app_localizations.dart';
 import '../../services/supabase_service.dart';
 import '../../services/notification_service.dart';
 import '../../widgets/profile_avatar_widget.dart';
@@ -8,7 +9,6 @@ import 'citizen_report.dart';
 import '../complaint_tracking/complaint_detail_screen.dart';
 import '../notifications/notifications_screen.dart';
 
-// CitizenScreen — Citizen এর main home screen
 class CitizenScreen extends StatefulWidget {
   const CitizenScreen({Key? key}) : super(key: key);
 
@@ -17,24 +17,19 @@ class CitizenScreen extends StatefulWidget {
 }
 
 class _CitizenScreenState extends State<CitizenScreen> {
-  // Bottom navigation এর selected index
   int _selectedIndex = 0;
-  // Complaint filter — শুরুতে 'New' complaints দেখাবে
-  String _selectedComplaintFilter = 'New';
-  // Login করা user এর নাম
+  // key-based filter: 'new', 'in_progress', 'resolved', 'escalated'
+  String _selectedComplaintFilter = 'new';
   String _userName = 'Citizen';
 
-  // Database থেকে আনা সব complaint
   List<Map<String, dynamic>> _allComplaints = [];
   bool _isLoading = true;
 
-  // Header এ দেখানোর জন্য stats
   int _totalComplaints = 0;
   int _inProgressCount = 0;
   int _resolvedCount = 0;
   int _escalatedCount = 0;
 
-  // Unread notification count — bottom nav badge এর জন্য
   int _unreadCount = 0;
   RealtimeChannel? _notifChannel;
 
@@ -56,7 +51,6 @@ class _CitizenScreenState extends State<CitizenScreen> {
     super.dispose();
   }
 
-  // Unread notification count fetch করার function
   Future<void> _fetchUnreadCount() async {
     final user = AuthService.currentUser;
     if (user == null) return;
@@ -70,7 +64,6 @@ class _CitizenScreenState extends State<CitizenScreen> {
     } catch (_) {}
   }
 
-  // Realtime — নতুন notification আসলে badge count বাড়াবে
   void _subscribeNotifications() {
     final user = AuthService.currentUser;
     if (user == null) return;
@@ -92,11 +85,9 @@ class _CitizenScreenState extends State<CitizenScreen> {
         .subscribe();
   }
 
-  // Supabase থেকে এই citizen এর সব complaint fetch করার function
   Future<void> _fetchComplaints() async {
     setState(() => _isLoading = true);
     try {
-      // শুধু এই user এর complaints আনা হচ্ছে citizen_id দিয়ে filter করে
       final data = await supabase
           .from('complaints')
           .select()
@@ -108,7 +99,6 @@ class _CitizenScreenState extends State<CitizenScreen> {
           .toList();
       setState(() {
         _allComplaints = list;
-        // Stats calculate করা হচ্ছে
         _totalComplaints = list.length;
         _inProgressCount = list.where((c) => c['status'] == 'In progress').length;
         _resolvedCount = list.where((c) => c['status'] == 'Resolved').length;
@@ -120,23 +110,23 @@ class _CitizenScreenState extends State<CitizenScreen> {
     }
   }
 
-  // Selected filter অনুযায়ী complaints filter করে return করে
   List<Map<String, dynamic>> get _filteredComplaints {
-    if (_selectedComplaintFilter == 'New') {
-      return _allComplaints.where((c) => c['status'] == 'New').toList();
-    }
-    return _allComplaints
-        .where((c) => c['status'] == _selectedComplaintFilter)
-        .toList();
+    const filterMap = {
+      'new': 'New',
+      'in_progress': 'In progress',
+      'resolved': 'Resolved',
+      'escalated': 'Escalated',
+    };
+    final dbStatus = filterMap[_selectedComplaintFilter];
+    if (dbStatus == null) return _allComplaints;
+    return _allComplaints.where((c) => c['status'] == dbStatus).toList();
   }
 
-  // সবচেয়ে নতুন ২টি complaint — Recent section এ দেখানো হবে
   List<Map<String, dynamic>> get _recentComplaints =>
       _allComplaints.take(2).toList();
 
   @override
   Widget build(BuildContext context) {
-    // Show notifications screen when tab 2 is selected
     if (_selectedIndex == 2) {
       return NotificationsScreen(
         viewerRole: 'Citizen',
@@ -166,8 +156,8 @@ class _CitizenScreenState extends State<CitizenScreen> {
     );
   }
 
-  // Header widget — gradient background, user নাম ও stats
   Widget _buildHeader() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -190,16 +180,15 @@ class _CitizenScreenState extends State<CitizenScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Good morning,',
-                    style: TextStyle(
+                  Text(
+                    l10n.goodMorning,
+                    style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  // User এর নাম dynamically দেখানো হচ্ছে
                   Text(
                     _userName,
                     style: const TextStyle(
@@ -210,28 +199,23 @@ class _CitizenScreenState extends State<CitizenScreen> {
                   ),
                 ],
               ),
-              // Profile icon — tap করলে profile screen এ যাবে
               GestureDetector(
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                       builder: (context) => const CitizenProfileScreen()),
                 ),
-                child: ProfileAvatarWidget(
-                  userName: _userName,
-                  radius: 22,
-                ),
+                child: ProfileAvatarWidget(userName: _userName, radius: 22),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          // ৪টি stat card — Total, In Progress, Resolved, Escalated
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildHeaderStatCard('$_totalComplaints', 'Total\nReports'),
-              _buildHeaderStatCard('$_inProgressCount', 'In\nProgress'),
-              _buildHeaderStatCard('$_resolvedCount', 'Resolved'),
-              _buildHeaderStatCard('$_escalatedCount', 'Escalated'),
+              _buildHeaderStatCard('$_totalComplaints', l10n.totalReports),
+              _buildHeaderStatCard('$_inProgressCount', l10n.inProgress),
+              _buildHeaderStatCard('$_resolvedCount', l10n.resolved),
+              _buildHeaderStatCard('$_escalatedCount', l10n.escalated),
             ],
           ),
         ],
@@ -239,7 +223,6 @@ class _CitizenScreenState extends State<CitizenScreen> {
     );
   }
 
-  // Header এর একটি stat card widget
   Widget _buildHeaderStatCard(String number, String label) {
     return Expanded(
       child: Container(
@@ -277,38 +260,39 @@ class _CitizenScreenState extends State<CitizenScreen> {
     );
   }
 
-  // Quick action buttons section
   Widget _buildQuickActions() {
+    final l10n = AppLocalizations.of(context)!;
     final textPrimary = Theme.of(context).colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Quick actions', style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(l10n.quickActions,
+              style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           Row(
             children: [
-              // Report issue button — CitizenReportScreen এ navigate করবে
               _buildQuickActionCard(
                 icon: Icons.edit_outlined,
                 iconColor: const Color(0xFF3B82F6),
-                title: 'Report issue',
-                subtitle: 'Submit new complaint',
+                title: l10n.reportIssue,
+                subtitle: l10n.submitNewComplaint,
                 onTap: () async {
-                  // Report screen থেকে ফিরে আসলে complaints refresh হবে
                   await Navigator.of(context).push(MaterialPageRoute(
                       builder: (context) => const CitizenReportScreen()));
                   _fetchComplaints();
                 },
               ),
               const SizedBox(width: 12),
-              // My complaints button
               _buildQuickActionCard(
                 icon: Icons.list_alt_outlined,
                 iconColor: const Color(0xFF059669),
-                title: 'My complaints',
-                subtitle: 'View & track all',
+                title: l10n.myComplaints,
+                subtitle: l10n.viewAndTrackAll,
                 onTap: () {},
               ),
             ],
@@ -316,21 +300,19 @@ class _CitizenScreenState extends State<CitizenScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              // Live tracking button
               _buildQuickActionCard(
                 icon: Icons.location_on_outlined,
                 iconColor: const Color(0xFFF59E0B),
-                title: 'Live tracking',
-                subtitle: 'Check complaint map',
+                title: l10n.liveTracking,
+                subtitle: l10n.checkComplaintMap,
                 onTap: () {},
               ),
               const SizedBox(width: 12),
-              // City stats button
               _buildQuickActionCard(
                 icon: Icons.bar_chart_outlined,
                 iconColor: const Color(0xFFEC4899),
-                title: 'City stats',
-                subtitle: 'Public analytics',
+                title: l10n.cityStats,
+                subtitle: l10n.publicAnalytics,
                 onTap: () {},
               ),
             ],
@@ -340,7 +322,6 @@ class _CitizenScreenState extends State<CitizenScreen> {
     );
   }
 
-  // একটি quick action card widget
   Widget _buildQuickActionCard({
     required IconData icon,
     required Color iconColor,
@@ -350,7 +331,8 @@ class _CitizenScreenState extends State<CitizenScreen> {
   }) {
     final cardColor = Theme.of(context).cardColor;
     final textPrimary = Theme.of(context).colorScheme.onSurface;
-    final textSecondary = Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
+    final textSecondary =
+        Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -370,7 +352,6 @@ class _CitizenScreenState extends State<CitizenScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon container
               Container(
                 width: 44,
                 height: 44,
@@ -399,8 +380,8 @@ class _CitizenScreenState extends State<CitizenScreen> {
     );
   }
 
-  // Recent complaints section — সবচেয়ে নতুন ২টি complaint
   Widget _buildRecentComplaints() {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -409,15 +390,15 @@ class _CitizenScreenState extends State<CitizenScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Recent complaints',
-                  style: TextStyle(
+              Text(l10n.recentComplaints,
+                  style: const TextStyle(
                       color: Color(0xFF1F2937),
                       fontSize: 16,
                       fontWeight: FontWeight.bold)),
               GestureDetector(
                 onTap: () {},
-                child: const Text('See all >',
-                    style: TextStyle(
+                child: Text(l10n.seeAll,
+                    style: const TextStyle(
                         color: Color(0xFF3B82F6),
                         fontSize: 12,
                         fontWeight: FontWeight.w600)),
@@ -425,12 +406,11 @@ class _CitizenScreenState extends State<CitizenScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          // Loading, empty বা complaint list দেখানো হচ্ছে
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
           else if (_recentComplaints.isEmpty)
-            const Text('No complaints yet.',
-                style: TextStyle(color: Color(0xFF6B7280)))
+            Text(l10n.noComplaintsYet,
+                style: const TextStyle(color: Color(0xFF6B7280)))
           else
             ..._recentComplaints.map((c) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
@@ -495,16 +475,16 @@ class _CitizenScreenState extends State<CitizenScreen> {
                   const SizedBox(height: 4),
                   Row(children: [
                     Text(c['location'] ?? '',
-                        style: TextStyle(
-                            color: textSecondary, fontSize: 12)),
+                        style:
+                            TextStyle(color: textSecondary, fontSize: 12)),
                     Padding(
                         padding:
                             const EdgeInsets.symmetric(horizontal: 6),
                         child: Text('•',
                             style: TextStyle(color: textSecondary))),
                     Text(date,
-                        style: TextStyle(
-                            color: textSecondary, fontSize: 12)),
+                        style:
+                            TextStyle(color: textSecondary, fontSize: 12)),
                   ]),
                 ],
               ),
@@ -527,33 +507,67 @@ class _CitizenScreenState extends State<CitizenScreen> {
     );
   }
 
-  // My complaints section — filter chips ও filtered list
   Widget _buildMyComplaintsSection() {
+    final l10n = AppLocalizations.of(context)!;
+    final filterLabels = [
+      l10n.statusNew,
+      l10n.inProgress,
+      l10n.resolved,
+      l10n.escalated,
+    ];
+    const filterKeys = ['new', 'in_progress', 'resolved', 'escalated'];
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('My complaints',
-              style: TextStyle(
+          Text(l10n.myComplaints,
+              style: const TextStyle(
                   color: Color(0xFF1F2937),
                   fontSize: 16,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          // Horizontally scrollable filter chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: ['New', 'In progress', 'Resolved', 'Escalated']
-                  .map((f) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: _buildFilterChip(f),
-                      ))
-                  .toList(),
+              children: List.generate(filterKeys.length, (i) {
+                final isSelected = _selectedComplaintFilter == filterKeys[i];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => setState(
+                        () => _selectedComplaintFilter = filterKeys[i]),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF3B82F6)
+                            : Theme.of(context).cardColor,
+                        border: Border.all(
+                            color: isSelected
+                                ? const Color(0xFF3B82F6)
+                                : Theme.of(context).dividerColor),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(filterLabels[i],
+                          style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.6),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                );
+              }),
             ),
           ),
           const SizedBox(height: 16),
-          // Loading, empty বা filtered list দেখানো হচ্ছে
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
           else if (_filteredComplaints.isEmpty)
@@ -561,7 +575,7 @@ class _CitizenScreenState extends State<CitizenScreen> {
               padding: const EdgeInsets.all(24),
               alignment: Alignment.center,
               child: Text(
-                'No $_selectedComplaintFilter complaints.',
+                l10n.noFilteredComplaints(_selectedComplaintFilter),
                 style: const TextStyle(color: Color(0xFF6B7280)),
               ),
             )
@@ -571,28 +585,6 @@ class _CitizenScreenState extends State<CitizenScreen> {
                   child: _buildMyComplaintItem(c),
                 )),
         ],
-      ),
-    );
-  }
-
-  // Filter chip widget — selected হলে নীল
-  Widget _buildFilterChip(String label) {
-    final theme = Theme.of(context);
-    final isSelected = _selectedComplaintFilter == label;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedComplaintFilter = label),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF3B82F6) : theme.cardColor,
-          border: Border.all(color: isSelected ? const Color(0xFF3B82F6) : theme.dividerColor),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(label,
-            style: TextStyle(
-                color: isSelected ? Colors.white : theme.colorScheme.onSurface.withOpacity(0.6),
-                fontSize: 12,
-                fontWeight: FontWeight.w600)),
       ),
     );
   }
@@ -608,7 +600,8 @@ class _CitizenScreenState extends State<CitizenScreen> {
     final icon = _categoryIcon(c['category'] ?? 'OTHER');
     final iconColor = _categoryColor(c['category'] ?? 'OTHER');
     final date = _formatDate(c['created_at']);
-    final officer = c['assigned_officer_name'] ?? 'Unassigned';
+    final officer = c['assigned_officer_name'] ??
+        AppLocalizations.of(context)!.unassigned;
     return GestureDetector(
       onTap: () => Navigator.of(context)
           .push(MaterialPageRoute(
@@ -680,23 +673,24 @@ class _CitizenScreenState extends State<CitizenScreen> {
                         size: 14, color: textSecondary),
                     const SizedBox(width: 4),
                     Text(c['location'] ?? '',
-                        style: TextStyle(
-                            color: textSecondary, fontSize: 12)),
+                        style:
+                            TextStyle(color: textSecondary, fontSize: 12)),
                   ]),
                   const SizedBox(height: 4),
                   Row(children: [
                     Text(date,
-                        style:
-                            TextStyle(color: textMuted, fontSize: 11)),
+                        style: TextStyle(color: textMuted, fontSize: 11)),
                     Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 6),
                         child: Text('•',
                             style: TextStyle(
                                 color: textMuted, fontSize: 11))),
                     Expanded(
-                        child: Text('Officer: $officer',
-                            style: TextStyle(
-                                color: textMuted, fontSize: 11),
+                        child: Text(
+                            '${AppLocalizations.of(context)!.officer}: $officer',
+                            style:
+                                TextStyle(color: textMuted, fontSize: 11),
                             overflow: TextOverflow.ellipsis)),
                   ]),
                 ],
@@ -709,6 +703,7 @@ class _CitizenScreenState extends State<CitizenScreen> {
   }
 
   Widget _buildBottomNavigation() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -735,7 +730,6 @@ class _CitizenScreenState extends State<CitizenScreen> {
             return;
           }
           if (index == 2) {
-            // Notifications tab tap করলে count reset করা হচ্ছে
             setState(() {
               _unreadCount = 0;
               _selectedIndex = 2;
@@ -753,11 +747,11 @@ class _CitizenScreenState extends State<CitizenScreen> {
           BottomNavigationBarItem(
               icon: Icon(
                   _selectedIndex == 0 ? Icons.home : Icons.home_outlined),
-              label: 'Home'),
+              label: l10n.home),
           BottomNavigationBarItem(
               icon: Icon(
                   _selectedIndex == 1 ? Icons.edit : Icons.edit_outlined),
-              label: 'Report'),
+              label: l10n.report),
           BottomNavigationBarItem(
               icon: Stack(
                 clipBehavior: Clip.none,
@@ -775,7 +769,8 @@ class _CitizenScreenState extends State<CitizenScreen> {
                           color: Color(0xFFDC2626),
                           shape: BoxShape.circle,
                         ),
-                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                        constraints: const BoxConstraints(
+                            minWidth: 16, minHeight: 16),
                         child: Text(
                           _unreadCount > 99 ? '99+' : '$_unreadCount',
                           style: const TextStyle(
@@ -788,57 +783,69 @@ class _CitizenScreenState extends State<CitizenScreen> {
                     ),
                 ],
               ),
-              label: 'Notifications'),
+              label: l10n.notifications),
           BottomNavigationBarItem(
               icon: Icon(
                   _selectedIndex == 3 ? Icons.person : Icons.person_outline),
-              label: 'Profile'),
+              label: l10n.profile),
         ],
       ),
     );
   }
 
-  // Status অনুযায়ী রঙ return করার helper
   Color _statusColor(String status) {
     switch (status) {
-      case 'In progress': return const Color(0xFFF59E0B);
-      case 'Resolved':    return const Color(0xFF059669);
-      case 'Escalated':   return const Color(0xFFDC2626);
-      default:            return const Color(0xFF3B82F6); // New
+      case 'In progress':
+        return const Color(0xFFF59E0B);
+      case 'Resolved':
+        return const Color(0xFF059669);
+      case 'Escalated':
+        return const Color(0xFFDC2626);
+      default:
+        return const Color(0xFF3B82F6);
     }
   }
 
-  // Category অনুযায়ী icon return করার helper
   IconData _categoryIcon(String category) {
     switch (category) {
-      case 'ROAD':      return Icons.warning_amber;
-      case 'LIGHTING':  return Icons.lightbulb_outline;
-      case 'GARBAGE':   return Icons.delete_outline;
+      case 'ROAD':
+        return Icons.warning_amber;
+      case 'LIGHTING':
+        return Icons.lightbulb_outline;
+      case 'GARBAGE':
+        return Icons.delete_outline;
       case 'DRAINAGE':
-      case 'WATER':     return Icons.water_drop_outlined;
-      default:          return Icons.report_outlined;
+      case 'WATER':
+        return Icons.water_drop_outlined;
+      default:
+        return Icons.report_outlined;
     }
   }
 
-  // Category অনুযায়ী রঙ return করার helper
   Color _categoryColor(String category) {
     switch (category) {
       case 'ROAD':
-      case 'LIGHTING':  return const Color(0xFFFCD34D);
-      case 'GARBAGE':   return const Color(0xFF6B7280);
-      case 'DRAINAGE':  return const Color(0xFF3B82F6);
-      case 'WATER':     return const Color(0xFF60A5FA);
-      default:          return const Color(0xFF9CA3AF);
+      case 'LIGHTING':
+        return const Color(0xFFFCD34D);
+      case 'GARBAGE':
+        return const Color(0xFF6B7280);
+      case 'DRAINAGE':
+        return const Color(0xFF3B82F6);
+      case 'WATER':
+        return const Color(0xFF60A5FA);
+      default:
+        return const Color(0xFF9CA3AF);
     }
   }
 
-  // ISO date string কে 'Jan 5' format এ convert করার helper
   String _formatDate(String? isoDate) {
     if (isoDate == null) return '';
     final dt = DateTime.tryParse(isoDate);
     if (dt == null) return '';
-    const months = ['Jan','Feb','Mar','Apr','May','Jun',
-                    'Jul','Aug','Sep','Oct','Nov','Dec'];
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
     return '${months[dt.month - 1]} ${dt.day}';
   }
 }

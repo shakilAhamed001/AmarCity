@@ -1,3 +1,5 @@
+// CreateAccountScreen — নতুন অ্যাকাউন্ট তৈরির screen
+// Citizen ও Officer দুটি role support — Officer হলে department সিলেক্ট করতে হবে
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -23,6 +25,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
   String? _selectedDepartment;
   bool _isLoading = false;
 
+  // Available department list — Officer role সিলেক্ট করলে দেখাবে
   static const List<String> _departments = [
     'Public Health & Sanitation Department',
     'Trade License Issuance & Registration Department',
@@ -110,6 +113,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
     super.dispose();
   }
 
+  // Form validation → Supabase signUp → login screen এ redirect
   void _handleCreateAccount() async {
     if (_nameController.text.isEmpty ||
         _emailController.text.isEmpty ||
@@ -433,6 +437,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
   }
 
   // Glass style text field
+  // Glass style text input field widget
   Widget _buildTextField({
     required String label,
     required String hint,
@@ -492,6 +497,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
     );
   }
 
+  // Password field — show/hide toggle সহ
   Widget _buildPasswordField({
     required String label,
     required String hint,
@@ -561,6 +567,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
     );
   }
 
+  // Citizen / Officer role selection button
   Widget _buildRoleButton(String role, IconData icon, String subtitle) {
     final bool isSelected = _selectedRole == role;
     return Expanded(
@@ -614,6 +621,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
     );
   }
 
+  // Officer select করলে department selection section দেখাবে
   List<Widget> _buildDepartmentSection() {
     return [
       Text(

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/supabase_service.dart';
 import '../../services/notification_service.dart';
 import '../citizen/feedback_screen.dart';
 import 'complaint_report_screen.dart';
+import 'chat_screen.dart';
 
 class ComplaintDetailScreen extends StatefulWidget {
   final Map<String, dynamic> complaint;
@@ -28,7 +32,8 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
   bool _isUpdating = false;
   String? _updatingStatus;
   final _commentController = TextEditingController();
-  bool _feedbackSubmitted = false; // feedback দেওয়া হয়েছে কিনা track করার জন্য
+  bool _feedbackSubmitted = false;
+  Uint8List? _afterImageBytes;
 
   static const _statuses = ['New', 'In progress', 'Resolved'];
 
@@ -43,6 +48,27 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
   void dispose() {
     _commentController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAfterImage() async {
+    final picker = ImagePicker();
+    final img = await picker.pickImage(
+        source: ImageSource.gallery, maxWidth: 1000, maxHeight: 1000, imageQuality: 80);
+    if (img != null) {
+      final bytes = await img.readAsBytes();
+      setState(() => _afterImageBytes = bytes);
+    }
+  }
+
+  Future<String?> _uploadAfterImage(String complaintId) async {
+    if (_afterImageBytes == null) return null;
+    final fileName = 'after_${complaintId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    await supabase.storage.from('complaint-images').uploadBinary(
+      fileName,
+      _afterImageBytes!,
+      fileOptions: const FileOptions(contentType: 'image/jpeg', upsert: true),
+    );
+    return supabase.storage.from('complaint-images').getPublicUrl(fileName);
   }
 
   // showLoading false হলে spinner দেখাবে না — status update এর পরে reload এর জন্য
@@ -119,9 +145,15 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
       final complaintId = _complaint['id'].toString();
       final officerId = AuthService.currentUser!.id;
 
-      await supabase
-          .from('complaints')
-          .update({'status': newStatus}).eq('id', complaintId);
+      // Resolved হলে after photo upload করা হবে
+      String? afterUrl;
+      if (newStatus == 'Resolved') {
+        afterUrl = await _uploadAfterImage(complaintId);
+      }
+
+      final updateData = <String, dynamic>{'status': newStatus};
+      if (afterUrl != null) updateData['after_image_url'] = afterUrl;
+      await supabase.from('complaints').update(updateData).eq('id', complaintId);
 
       await NotificationService.addStatusHistory(
         complaintId: complaintId,
@@ -226,6 +258,15 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                   const SizedBox(height: 16),
                   if (widget.viewerRole == 'Officer') _buildStatusUpdatePanel(),
                   if (widget.viewerRole == 'Admin') _buildViewReportButton(),
+                  if (widget.viewerRole == 'Citizen' ||
+                      widget.viewerRole == 'Officer')
+                    _buildChatButton(),
+                  if (_complaint['image_urls'] != null ||
+                      _complaint['after_image_url'] != null)
+                    const SizedBox(height: 16),
+                  if (_complaint['image_urls'] != null ||
+                      _complaint['after_image_url'] != null)
+                    _buildBeforeAfterCard(),
                   if (widget.viewerRole == 'Citizen' &&
                       _complaint['status'] == 'Resolved')
                     _buildFeedbackButton(),
@@ -239,6 +280,163 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildBeforeAfterCard() {
+    final raw = _complaint['image_urls'];
+    final beforeUrls = raw == null
+        ? <String>[]
+        : (raw as List).map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+    final afterUrl = _complaint['after_image_url'] as String?;
+
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Before & After',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Color(0xFF1F2937))),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Before
+              Expanded(
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDC2626).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text('BEFORE',
+                          style: TextStyle(
+                              color: Color(0xFFDC2626),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700)),
+                    ),
+                    const SizedBox(height: 8),
+                    if (beforeUrls.isEmpty)
+                      _photoPlaceholder()
+                    else
+                      GestureDetector(
+                        onTap: () => _showFullImage(beforeUrls.first),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            beforeUrls.first,
+                            height: 130,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _photoPlaceholder(),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              // After
+              Expanded(
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF059669).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text('AFTER',
+                          style: TextStyle(
+                              color: Color(0xFF059669),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700)),
+                    ),
+                    const SizedBox(height: 8),
+                    if (afterUrl == null || afterUrl.isEmpty)
+                      _photoPlaceholder(pending: true)
+                    else
+                      GestureDetector(
+                        onTap: () => _showFullImage(afterUrl),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            afterUrl,
+                            height: 130,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _photoPlaceholder(),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _photoPlaceholder({bool pending = false}) {
+    return Container(
+      height: 130,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            pending ? Icons.hourglass_empty_rounded : Icons.image_outlined,
+            color: const Color(0xFF9CA3AF),
+            size: 28,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            pending ? 'Pending' : 'No photo',
+            style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChatButton() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: SizedBox(
+        width: double.infinity,
+        height: 46,
+        child: ElevatedButton.icon(
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => ChatScreen(
+              complaint: _complaint,
+              viewerRole: widget.viewerRole,
+            ),
+          )),
+          icon: const Icon(Icons.chat_bubble_outline_rounded,
+              color: Colors.white, size: 18),
+          label: const Text('Open Chat',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF059669),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
+            elevation: 0,
+          ),
+        ),
+      ),
     );
   }
 
@@ -596,6 +794,79 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
             ),
           ),
           const SizedBox(height: 12),
+          // After photo picker — Resolved select করলে দেখাবে
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            child: _complaint['status'] != 'Resolved'
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('AFTER PHOTO (optional)',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF6B7280),
+                              letterSpacing: 0.5)),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: _pickAfterImage,
+                        child: Container(
+                          height: 100,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF9FAFB),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                color: const Color(0xFF059669).withOpacity(0.4),
+                                style: BorderStyle.solid),
+                          ),
+                          child: _afterImageBytes != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      Image.memory(_afterImageBytes!,
+                                          fit: BoxFit.cover),
+                                      Positioned(
+                                        top: 6,
+                                        right: 6,
+                                        child: GestureDetector(
+                                          onTap: () => setState(
+                                              () => _afterImageBytes = null),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(
+                                                color: Color(0xFFDC2626),
+                                                shape: BoxShape.circle),
+                                            child: const Icon(Icons.close,
+                                                color: Colors.white, size: 14),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: const [
+                                    Icon(Icons.add_photo_alternate_outlined,
+                                        color: Color(0xFF059669), size: 28),
+                                    SizedBox(height: 6),
+                                    Text('Add after photo',
+                                        style: TextStyle(
+                                            color: Color(0xFF059669),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+          ),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -612,7 +883,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: color.withOpacity(0.4)),
                   ),
-                  // শুধু tap করা button এ spinner দেখাবে
                   child: isThisUpdating
                       ? SizedBox(
                           width: 14,

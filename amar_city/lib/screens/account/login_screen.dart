@@ -1,7 +1,11 @@
+// LoginScreen — AmarCity app এর login page
+// Animated starfield ও flying birds background সহ glassmorphism design
+// Role অনুযায়ী (admin/officer/citizen) সঠিক screen এ navigate করে
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:amar_city/l10n/app_localizations.dart';
 import '../../services/supabase_service.dart';
 import '../forget_password/forgot_password_screen.dart';
 
@@ -38,6 +42,7 @@ class _LoginScreenState extends State<LoginScreen>
     _setupAnimations();
   }
 
+  // 60টি random star তৈরি করা — background animation এর জন্য
   void _buildStars() {
     for (int i = 0; i < 60; i++) {
       _stars.add(_StarData(
@@ -49,6 +54,7 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+  // 6টি random bird তৈরি করা — background animation এর জন্য
   void _buildBirds() {
     for (int i = 0; i < 6; i++) {
       _birds.add(_BirdData(
@@ -61,6 +67,7 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+  // Star, bird ও wing animation controllers setup করা
   void _setupAnimations() {
     _starCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 2000))
@@ -85,10 +92,13 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
+  // Login button press করলে call হয়
+  // Validation → Supabase signIn → role check → navigate
   void _handleSignIn() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+          .showSnackBar(SnackBar(content: Text(l10n.pleaseEnterAllFields)));
       return;
     }
     setState(() => _isLoading = true);
@@ -115,15 +125,12 @@ class _LoginScreenState extends State<LoginScreen>
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         String message = e.toString();
         if (message.contains('email_not_confirmed')) {
-          message = 'Please verify your email first. Check your inbox.';
+          message = l10n.verifyEmail;
         } else if (message.contains('invalid_credentials')) {
-          message = 'Invalid email or password.';
-        } else if (message.contains('user_already_exists') ||
-            message.contains('User already registered')) {
-          message =
-              'This email is already registered. Please verify your email or try logging in.';
+          message = l10n.invalidCredentials;
         }
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(message)));
@@ -133,6 +140,7 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+  // Input field এর common decoration — glassmorphism style
   InputDecoration _fieldDecoration({
     required String hint,
     required IconData icon,
@@ -164,10 +172,10 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       body: Stack(
         children: [
-          // Gradient background
           Container(
             width: double.infinity,
             height: double.infinity,
@@ -183,8 +191,6 @@ class _LoginScreenState extends State<LoginScreen>
               ),
             ),
           ),
-
-          // Twinkling stars
           AnimatedBuilder(
             animation: _starCtrl,
             builder: (_, __) => CustomPaint(
@@ -192,8 +198,6 @@ class _LoginScreenState extends State<LoginScreen>
               child: const SizedBox.expand(),
             ),
           ),
-
-          // Flying birds
           AnimatedBuilder(
             animation: Listenable.merge([_birdCtrl, _wingCtrl]),
             builder: (_, __) => CustomPaint(
@@ -205,8 +209,6 @@ class _LoginScreenState extends State<LoginScreen>
               child: const SizedBox.expand(),
             ),
           ),
-
-          // Main scrollable content
           SingleChildScrollView(
             child: Column(
               children: [
@@ -239,9 +241,9 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                       ),
                       const SizedBox(height: 15),
-                      const Text(
-                        'AmarCity',
-                        style: TextStyle(
+                      Text(
+                        l10n.appName,
+                        style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -249,9 +251,9 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                       ),
                       const SizedBox(height: 5),
-                      const Text(
-                        'SMART MUNICIPALITY PLATFORM',
-                        style: TextStyle(
+                      Text(
+                        l10n.smartMunicipalityPlatform,
+                        style: const TextStyle(
                           fontSize: 11,
                           color: Colors.white70,
                           letterSpacing: 2,
@@ -261,8 +263,6 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Glass card
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: ClipRRect(
@@ -282,18 +282,18 @@ class _LoginScreenState extends State<LoginScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Welcome back',
-                                style: TextStyle(
+                            Text(l10n.welcomeBack,
+                                style: const TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white)),
                             const SizedBox(height: 5),
-                            Text('Sign in to your civic dashboard',
+                            Text(l10n.signInToDashboard,
                                 style: TextStyle(
                                     fontSize: 13,
                                     color: Colors.white.withOpacity(0.7))),
                             const SizedBox(height: 25),
-                            Text('EMAIL ADDRESS',
+                            Text(l10n.emailAddress,
                                 style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -305,12 +305,12 @@ class _LoginScreenState extends State<LoginScreen>
                               keyboardType: TextInputType.emailAddress,
                               style: const TextStyle(color: Colors.white),
                               decoration: _fieldDecoration(
-                                hint: 'rahim@example.com',
+                                hint: l10n.emailHint,
                                 icon: Icons.email_outlined,
                               ),
                             ),
                             const SizedBox(height: 20),
-                            Text('PASSWORD',
+                            Text(l10n.password,
                                 style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -322,7 +322,7 @@ class _LoginScreenState extends State<LoginScreen>
                               obscureText: _obscurePassword,
                               style: const TextStyle(color: Colors.white),
                               decoration: _fieldDecoration(
-                                hint: 'Enter your password',
+                                hint: l10n.passwordHint,
                                 icon: Icons.lock_outlined,
                                 suffix: IconButton(
                                   icon: Icon(
@@ -346,7 +346,7 @@ class _LoginScreenState extends State<LoginScreen>
                                       builder: (_) =>
                                           const ForgotPasswordScreen()),
                                 ),
-                                child: Text('Forgot Password?',
+                                child: Text(l10n.forgotPassword,
                                     style: TextStyle(
                                         fontSize: 13,
                                         color: Colors.white.withOpacity(0.85),
@@ -371,8 +371,8 @@ class _LoginScreenState extends State<LoginScreen>
                                         height: 22,
                                         child: CircularProgressIndicator(
                                             color: Colors.white, strokeWidth: 2))
-                                    : const Text('Sign in securely',
-                                        style: TextStyle(
+                                    : Text(l10n.signIn,
+                                        style: const TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w600,
                                             color: Colors.white,
@@ -388,7 +388,7 @@ class _LoginScreenState extends State<LoginScreen>
                               Padding(
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 12),
-                                child: Text('or continue with',
+                                child: Text(l10n.orContinueWith,
                                     style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.white.withOpacity(0.5))),
@@ -440,13 +440,13 @@ class _LoginScreenState extends State<LoginScreen>
                             Center(
                               child: RichText(
                                 text: TextSpan(
-                                  text: 'New to AmarCity? ',
+                                  text: l10n.newToAmarCity,
                                   style: TextStyle(
                                       fontSize: 13,
                                       color: Colors.white.withOpacity(0.7)),
                                   children: [
                                     TextSpan(
-                                      text: 'Create account',
+                                      text: l10n.createAccount,
                                       style: const TextStyle(
                                           fontSize: 13,
                                           color: Colors.white,
@@ -482,7 +482,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 }
 
-// ── Star data ──
+// Star এর position, size ও twinkle phase store করার data class
 class _StarData {
   final double x, y, size, phase;
   const _StarData(
@@ -492,6 +492,7 @@ class _StarData {
       required this.phase});
 }
 
+// Canvas এ তারা এঁকে twinkle animation করার CustomPainter
 class _StarPainter extends CustomPainter {
   final List<_StarData> stars;
   final double progress;
@@ -512,7 +513,7 @@ class _StarPainter extends CustomPainter {
   bool shouldRepaint(covariant _StarPainter old) => old.progress != progress;
 }
 
-// ── Bird data ──
+// Bird এর initial position, speed ও scale store করার data class
 class _BirdData {
   final double startX, y, speed, scale, phase;
   const _BirdData(
@@ -523,6 +524,7 @@ class _BirdData {
       required this.phase});
 }
 
+// Canvas এ পাখি এঁকে উড়ানোর animation করার CustomPainter
 class _BirdPainter extends CustomPainter {
   final List<_BirdData> birds;
   final double progress;

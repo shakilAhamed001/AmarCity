@@ -1,5 +1,7 @@
-// Flutter material design import
 import 'package:flutter/material.dart';
+import 'package:amar_city/l10n/app_localizations.dart';
+import '../../services/locale_service.dart';
+import '../../services/supabase_service.dart';
 
 // AdminProfile — Admin এর profile ও settings screen
 class AdminProfile extends StatefulWidget {
@@ -28,6 +30,9 @@ class _AdminProfileState extends State<AdminProfile> {
                 // Complaints, Users, Resolution rate stats
                 _buildStatsSection(),
                 const SizedBox(height: 32),
+                // Language toggle
+                _buildLanguageCard(),
+                const SizedBox(height: 16),
                 // Settings options list
                 _buildSettingsSection(),
                 const SizedBox(height: 40),
@@ -150,6 +155,62 @@ class _AdminProfileState extends State<AdminProfile> {
           ),
         ),
       ],
+    );
+  }
+
+  // Language toggle card
+  Widget _buildLanguageCard() {
+    final l10n = AppLocalizations.of(context)!;
+    final isBangla = localeService.isBangla;
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFF7C3AED).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.language, color: Color(0xFF7C3AED), size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(l10n.language,
+                style: const TextStyle(
+                    color: Color(0xFF1F2937),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600)),
+          ),
+          GestureDetector(
+            onTap: () {
+              localeService.toggle();
+              setState(() {});
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: const Color(0xFF7C3AED).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFF7C3AED).withOpacity(0.3)),
+              ),
+              child: Text(
+                isBangla ? l10n.bangla : l10n.english,
+                style: const TextStyle(
+                    color: Color(0xFF7C3AED),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

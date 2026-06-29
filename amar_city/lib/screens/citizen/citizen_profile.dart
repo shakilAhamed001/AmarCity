@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:amar_city/l10n/app_localizations.dart';
 import '../../services/supabase_service.dart';
 import '../../services/theme_notifier.dart';
+import '../../services/locale_service.dart';
 import '../../widgets/profile_avatar_widget.dart';
 import 'edit_profile_screen.dart';
 import 'address_screen.dart';
@@ -115,6 +117,8 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
                     )),
                 // Dark mode toggle
                 _buildDarkModeOption(),
+                // Language toggle
+                _buildLanguageOption(),
                 _buildOption(Icons.help_outline, 'Help & Support'),
                 // Logout option — লাল রঙে
                 _buildOption(Icons.logout, 'Log out',
@@ -136,7 +140,6 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
         ListTile(
           leading: Icon(isDark ? Icons.dark_mode : Icons.light_mode, color: textColor),
           title: Text('Dark Mode', style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
-          // Switch toggle — tap করলে theme পরিবর্তন হবে
           trailing: Switch(
             value: isDark,
             activeColor: const Color(0xFF1E40AF),
@@ -144,6 +147,43 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
               ThemeNotifier().toggle();
               setState(() {});
             },
+          ),
+        ),
+        const Divider(height: 1, thickness: 0.5, indent: 16, endIndent: 16),
+      ],
+    );
+  }
+
+  // Language toggle option widget
+  Widget _buildLanguageOption() {
+    final l10n = AppLocalizations.of(context)!;
+    final isBangla = localeService.isBangla;
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    return Column(
+      children: [
+        ListTile(
+          leading: Icon(Icons.language, color: textColor),
+          title: Text(l10n.language, style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
+          trailing: GestureDetector(
+            onTap: () {
+              localeService.toggle();
+              setState(() {});
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E40AF).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFF1E40AF).withOpacity(0.3)),
+              ),
+              child: Text(
+                isBangla ? l10n.bangla : l10n.english,
+                style: const TextStyle(
+                    color: Color(0xFF1E40AF),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13),
+              ),
+            ),
           ),
         ),
         const Divider(height: 1, thickness: 0.5, indent: 16, endIndent: 16),
