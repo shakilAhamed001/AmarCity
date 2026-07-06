@@ -6,8 +6,10 @@ import '../../services/notification_service.dart';
 import '../../widgets/profile_avatar_widget.dart';
 import 'citizen_profile.dart';
 import 'citizen_report.dart';
+import 'community_feed_screen.dart';
 import '../complaint_tracking/complaint_detail_screen.dart';
 import '../notifications/notifications_screen.dart';
+import 'map_screen.dart';
 
 class CitizenScreen extends StatefulWidget {
   const CitizenScreen({Key? key}) : super(key: key);
@@ -48,6 +50,7 @@ class _CitizenScreenState extends State<CitizenScreen> {
   @override
   void dispose() {
     _notifChannel?.unsubscribe();
+    _notifChannel = null;
     super.dispose();
   }
 
@@ -86,6 +89,7 @@ class _CitizenScreenState extends State<CitizenScreen> {
   }
 
   Future<void> _fetchComplaints() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final data = await supabase
@@ -97,6 +101,7 @@ class _CitizenScreenState extends State<CitizenScreen> {
       final list = (data as List)
           .map((e) => Map<String, dynamic>.from(e as Map))
           .toList();
+      if (!mounted) return;
       setState(() {
         _allComplaints = list;
         _totalComplaints = list.length;
@@ -106,6 +111,7 @@ class _CitizenScreenState extends State<CitizenScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }
@@ -132,6 +138,10 @@ class _CitizenScreenState extends State<CitizenScreen> {
         viewerRole: 'Citizen',
         onBack: () => setState(() => _selectedIndex = 0),
       );
+    }
+    // Community Feed tab
+    if (_selectedIndex == 3) {
+      return const CommunityFeedScreen();
     }
 
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
@@ -305,7 +315,11 @@ class _CitizenScreenState extends State<CitizenScreen> {
                 iconColor: const Color(0xFFF59E0B),
                 title: l10n.liveTracking,
                 subtitle: l10n.checkComplaintMap,
-                onTap: () {},
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => MapScreen(viewerRole: 'Citizen'),
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               _buildQuickActionCard(
@@ -485,6 +499,33 @@ class _CitizenScreenState extends State<CitizenScreen> {
                     Text(date,
                         style:
                             TextStyle(color: textSecondary, fontSize: 12)),
+                    // upvote count
+                    Builder(builder: (_) {
+                      final raw = c['complaint_upvotes'];
+                      int upvotes = 0;
+                      if (raw is List && raw.isNotEmpty) {
+                        upvotes = (raw.first['count'] as num? ?? 0).toInt();
+                      } else if (c['upvote_count'] is int) {
+                        upvotes = c['upvote_count'] as int;
+                      }
+                      if (upvotes == 0) return const SizedBox.shrink();
+                      return Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            child: Text('•', style: TextStyle(color: textSecondary)),
+                          ),
+                          const Icon(Icons.thumb_up_alt_rounded,
+                              size: 11, color: Color(0xFF6366F1)),
+                          const SizedBox(width: 3),
+                          Text('$upvotes',
+                              style: const TextStyle(
+                                  color: Color(0xFF6366F1),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600)),
+                        ],
+                      );
+                    }),
                   ]),
                 ],
               ),
@@ -724,7 +765,7 @@ class _CitizenScreenState extends State<CitizenScreen> {
                 .then((_) => _fetchComplaints());
             return;
           }
-          if (index == 3) {
+          if (index == 4) {
             Navigator.of(context).push(MaterialPageRoute(
                 builder: (context) => const CitizenProfileScreen()));
             return;
@@ -734,6 +775,10 @@ class _CitizenScreenState extends State<CitizenScreen> {
               _unreadCount = 0;
               _selectedIndex = 2;
             });
+            return;
+          }
+          if (index == 3) {
+            setState(() => _selectedIndex = 3);
             return;
           }
           setState(() => _selectedIndex = index);
@@ -786,7 +831,13 @@ class _CitizenScreenState extends State<CitizenScreen> {
               label: l10n.notifications),
           BottomNavigationBarItem(
               icon: Icon(
-                  _selectedIndex == 3 ? Icons.person : Icons.person_outline),
+                  _selectedIndex == 3
+                      ? Icons.people_alt_rounded
+                      : Icons.people_alt_outlined),
+              label: 'Community'),
+          BottomNavigationBarItem(
+              icon: Icon(
+                  _selectedIndex == 4 ? Icons.person : Icons.person_outline),
               label: l10n.profile),
         ],
       ),

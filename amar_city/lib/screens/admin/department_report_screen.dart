@@ -7,7 +7,7 @@ import '../../services/supabase_service.dart';
 class DepartmentReportScreen extends StatefulWidget {
   final String department;
   const DepartmentReportScreen({Key? key, required this.department})
-      : super(key: key);
+    : super(key: key);
 
   @override
   State<DepartmentReportScreen> createState() => _DepartmentReportScreenState();
@@ -45,8 +45,9 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -59,8 +60,7 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
           .where((c) => c['assigned_officer_id']?.toString() == officerId)
           .toList();
 
-  int get _newCount =>
-      _complaints.where((c) => c['status'] == 'New').length;
+  int get _newCount => _complaints.where((c) => c['status'] == 'New').length;
   int get _inProgressCount =>
       _complaints.where((c) => c['status'] == 'In progress').length;
   int get _resolvedCount =>
@@ -78,22 +78,17 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
-        theme: pw.ThemeData.withFont(
-          base: font,
-          bold: fontBold,
-        ),
+        theme: pw.ThemeData.withFont(base: font, bold: fontBold),
         build: (pw.Context context) => [
           // Title
           pw.Text(
             'Department Report',
-            style: pw.TextStyle(
-                fontSize: 22, fontWeight: pw.FontWeight.bold),
+            style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 4),
           pw.Text(
             widget.department,
-            style: pw.TextStyle(
-                fontSize: 14, color: PdfColors.purple700),
+            style: pw.TextStyle(fontSize: 14, color: PdfColors.purple700),
           ),
           pw.SizedBox(height: 4),
           pw.Text(
@@ -103,31 +98,41 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
           pw.Divider(height: 24),
 
           // Summary stats
-          pw.Text('Summary',
-              style: pw.TextStyle(
-                  fontSize: 14, fontWeight: pw.FontWeight.bold)),
+          pw.Text(
+            'Summary',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
           pw.SizedBox(height: 8),
-          pw.Row(children: [
-            _pdfStatBox('Total', '${_complaints.length}', PdfColors.blue700),
-            pw.SizedBox(width: 8),
-            _pdfStatBox('New', '$_newCount', PdfColors.blue400),
-            pw.SizedBox(width: 8),
-            _pdfStatBox('In Progress', '$_inProgressCount', PdfColors.amber700),
-            pw.SizedBox(width: 8),
-            _pdfStatBox('Resolved', '$_resolvedCount', PdfColors.green700),
-            pw.SizedBox(width: 8),
-            _pdfStatBox('Unassigned', '$_unassignedCount', PdfColors.red400),
-          ]),
+          pw.Row(
+            children: [
+              _pdfStatBox('Total', '${_complaints.length}', PdfColors.blue700),
+              pw.SizedBox(width: 8),
+              _pdfStatBox('New', '$_newCount', PdfColors.blue400),
+              pw.SizedBox(width: 8),
+              _pdfStatBox(
+                'In Progress',
+                '$_inProgressCount',
+                PdfColors.amber700,
+              ),
+              pw.SizedBox(width: 8),
+              _pdfStatBox('Resolved', '$_resolvedCount', PdfColors.green700),
+              pw.SizedBox(width: 8),
+              _pdfStatBox('Unassigned', '$_unassignedCount', PdfColors.red400),
+            ],
+          ),
           pw.SizedBox(height: 16),
 
           // Officers section
-          pw.Text('Officers (${_officers.length})',
-              style: pw.TextStyle(
-                  fontSize: 14, fontWeight: pw.FontWeight.bold)),
+          pw.Text(
+            'Officers (${_officers.length})',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
           pw.SizedBox(height: 8),
           if (_officers.isEmpty)
-            pw.Text('No officers assigned to this department.',
-                style: const pw.TextStyle(color: PdfColors.grey600))
+            pw.Text(
+              'No officers assigned to this department.',
+              style: const pw.TextStyle(color: PdfColors.grey600),
+            )
           else
             pw.Table(
               border: pw.TableBorder.all(color: PdfColors.grey300),
@@ -146,27 +151,35 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
                   ],
                 ),
                 ..._officers.map((o) {
-                  final name = o['full_name'] as String? ?? o['email'] as String? ?? '-';
+                  final name =
+                      o['full_name'] as String? ?? o['email'] as String? ?? '-';
                   final email = o['email'] as String? ?? '-';
-                  final count = _complaintsForOfficer(o['id'].toString()).length;
-                  return pw.TableRow(children: [
-                    _pdfCell(name),
-                    _pdfCell(email),
-                    _pdfCell('$count'),
-                  ]);
+                  final count = _complaintsForOfficer(
+                    o['id'].toString(),
+                  ).length;
+                  return pw.TableRow(
+                    children: [
+                      _pdfCell(name),
+                      _pdfCell(email),
+                      _pdfCell('$count'),
+                    ],
+                  );
                 }),
               ],
             ),
           pw.SizedBox(height: 20),
 
           // Complaints section
-          pw.Text('Complaints (${_complaints.length})',
-              style: pw.TextStyle(
-                  fontSize: 14, fontWeight: pw.FontWeight.bold)),
+          pw.Text(
+            'Complaints (${_complaints.length})',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
           pw.SizedBox(height: 8),
           if (_complaints.isEmpty)
-            pw.Text('No complaints found.',
-                style: const pw.TextStyle(color: PdfColors.grey600))
+            pw.Text(
+              'No complaints found.',
+              style: const pw.TextStyle(color: PdfColors.grey600),
+            )
           else
             pw.Table(
               border: pw.TableBorder.all(color: PdfColors.grey300),
@@ -197,15 +210,18 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
                         )
                       : <String, dynamic>{};
                   final officerName = officer.isNotEmpty
-                      ? (officer['full_name'] ?? officer['email'] ?? 'Unknown').toString()
+                      ? (officer['full_name'] ?? officer['email'] ?? 'Unknown')
+                            .toString()
                       : 'Unassigned';
                   final date = _formatDate(c['created_at'] as String?);
-                  return pw.TableRow(children: [
-                    _pdfCell(title),
-                    _pdfCell(status),
-                    _pdfCell(officerName),
-                    _pdfCell(date),
-                  ]);
+                  return pw.TableRow(
+                    children: [
+                      _pdfCell(title),
+                      _pdfCell(status),
+                      _pdfCell(officerName),
+                      _pdfCell(date),
+                    ],
+                  );
                 }),
               ],
             ),
@@ -227,15 +243,19 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
         child: pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.center,
           children: [
-            pw.Text(value,
-                style: pw.TextStyle(
-                    fontSize: 16,
-                    fontWeight: pw.FontWeight.bold,
-                    color: color)),
+            pw.Text(
+              value,
+              style: pw.TextStyle(
+                fontSize: 16,
+                fontWeight: pw.FontWeight.bold,
+                color: color,
+              ),
+            ),
             pw.SizedBox(height: 2),
-            pw.Text(label,
-                style:
-                    const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+            pw.Text(
+              label,
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+            ),
           ],
         ),
       ),
@@ -259,17 +279,33 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
     if (iso == null) return '-';
     final dt = DateTime.tryParse(iso);
     if (dt == null) return '-';
-    const m = ['Jan','Feb','Mar','Apr','May','Jun',
-                'Jul','Aug','Sep','Oct','Nov','Dec'];
+    const m = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${m[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'In progress': return const Color(0xFFF59E0B);
-      case 'Resolved':    return const Color(0xFF059669);
-      case 'Escalated':   return const Color(0xFFDC2626);
-      default:            return const Color(0xFF3B82F6);
+      case 'In progress':
+        return const Color(0xFFF59E0B);
+      case 'Resolved':
+        return const Color(0xFF059669);
+      case 'Escalated':
+        return const Color(0xFFDC2626);
+      default:
+        return const Color(0xFF3B82F6);
     }
   }
 
@@ -280,9 +316,10 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF4C1D95),
         foregroundColor: Colors.white,
-        title: Text(widget.department,
-            style: const TextStyle(
-                fontWeight: FontWeight.bold, fontSize: 15)),
+        title: Text(
+          widget.department,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        ),
         actions: [
           if (!_isLoading)
             IconButton(
@@ -319,27 +356,50 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Summary',
-            style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937))),
+        const Text(
+          'Summary',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1F2937),
+          ),
+        ),
         const SizedBox(height: 12),
-        Row(children: [
-          _statCard('${_complaints.length}', 'Total', const Color(0xFF7C3AED)),
-          const SizedBox(width: 10),
-          _statCard('$_newCount', 'New', const Color(0xFF3B82F6)),
-          const SizedBox(width: 10),
-          _statCard('$_inProgressCount', 'In Progress', const Color(0xFFF59E0B)),
-        ]),
+        Row(
+          children: [
+            _statCard(
+              '${_complaints.length}',
+              'Total',
+              const Color(0xFF7C3AED),
+            ),
+            const SizedBox(width: 10),
+            _statCard('$_newCount', 'New', const Color(0xFF3B82F6)),
+            const SizedBox(width: 10),
+            _statCard(
+              '$_inProgressCount',
+              'In Progress',
+              const Color(0xFFF59E0B),
+            ),
+          ],
+        ),
         const SizedBox(height: 10),
-        Row(children: [
-          _statCard('$_resolvedCount', 'Resolved', const Color(0xFF059669)),
-          const SizedBox(width: 10),
-          _statCard('$_unassignedCount', 'Unassigned', const Color(0xFFDC2626)),
-          const SizedBox(width: 10),
-          _statCard('${_officers.length}', 'Officers', const Color(0xFF0891B2)),
-        ]),
+        Row(
+          children: [
+            _statCard('$_resolvedCount', 'Resolved', const Color(0xFF059669)),
+            const SizedBox(width: 10),
+            _statCard(
+              '$_unassignedCount',
+              'Unassigned',
+              const Color(0xFFDC2626),
+            ),
+            const SizedBox(width: 10),
+            _statCard(
+              '${_officers.length}',
+              'Officers',
+              const Color(0xFF0891B2),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -355,15 +415,19 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
         ),
         child: Column(
           children: [
-            Text(value,
-                style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: color)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 11, color: Color(0xFF6B7280))),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+            ),
           ],
         ),
       ),
@@ -374,11 +438,14 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Officers (${_officers.length})',
-            style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937))),
+        Text(
+          'Officers (${_officers.length})',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1F2937),
+          ),
+        ),
         const SizedBox(height: 12),
         if (_officers.isEmpty)
           Container(
@@ -389,13 +456,16 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
               border: Border.all(color: const Color(0xFFE5E7EB)),
             ),
             child: const Center(
-              child: Text('No officers in this department.',
-                  style: TextStyle(color: Color(0xFF9CA3AF))),
+              child: Text(
+                'No officers in this department.',
+                style: TextStyle(color: Color(0xFF9CA3AF)),
+              ),
             ),
           )
         else
           ...(_officers.map((o) {
-            final name = o['full_name'] as String? ?? o['email'] as String? ?? 'Officer';
+            final name =
+                o['full_name'] as String? ?? o['email'] as String? ?? 'Officer';
             final email = o['email'] as String? ?? '';
             final assigned = _complaintsForOfficer(o['id'].toString());
             return Container(
@@ -414,8 +484,9 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
                     child: Text(
                       name.isNotEmpty ? name[0].toUpperCase() : 'O',
                       style: const TextStyle(
-                          color: Color(0xFF4C1D95),
-                          fontWeight: FontWeight.bold),
+                        color: Color(0xFF4C1D95),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -423,21 +494,30 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                                color: Color(0xFF1F2937))),
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Color(0xFF1F2937),
+                          ),
+                        ),
                         if (email.isNotEmpty)
-                          Text(email,
-                              style: const TextStyle(
-                                  fontSize: 11, color: Color(0xFF6B7280))),
+                          Text(
+                            email,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF6B7280),
+                            ),
+                          ),
                       ],
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF4C1D95).withOpacity(0.08),
                       borderRadius: BorderRadius.circular(8),
@@ -445,9 +525,10 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
                     child: Text(
                       '${assigned.length} complaints',
                       style: const TextStyle(
-                          color: Color(0xFF4C1D95),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600),
+                        color: Color(0xFF4C1D95),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -462,11 +543,14 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Complaints (${_complaints.length})',
-            style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937))),
+        Text(
+          'Complaints (${_complaints.length})',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1F2937),
+          ),
+        ),
         const SizedBox(height: 12),
         if (_complaints.isEmpty)
           Container(
@@ -477,8 +561,10 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
               border: Border.all(color: const Color(0xFFE5E7EB)),
             ),
             child: const Center(
-              child: Text('No complaints yet.',
-                  style: TextStyle(color: Color(0xFF9CA3AF))),
+              child: Text(
+                'No complaints yet.',
+                style: TextStyle(color: Color(0xFF9CA3AF)),
+              ),
             ),
           )
         else
@@ -495,7 +581,8 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
                   )
                 : <String, dynamic>{};
             final officerName = officer.isNotEmpty
-                ? (officer['full_name'] ?? officer['email'] ?? 'Unknown').toString()
+                ? (officer['full_name'] ?? officer['email'] ?? 'Unknown')
+                      .toString()
                 : 'Unassigned';
             final statusColor = _statusColor(status);
 
@@ -513,53 +600,82 @@ class _DepartmentReportScreenState extends State<DepartmentReportScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(title,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                                color: Color(0xFF1F2937))),
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Color(0xFF1F2937),
+                          ),
+                        ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: statusColor.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Text(status,
-                            style: TextStyle(
-                                color: statusColor,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600)),
+                        child: Text(
+                          status,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Row(children: [
-                    const Icon(Icons.location_on_outlined,
-                        size: 12, color: Color(0xFF9CA3AF)),
-                    const SizedBox(width: 4),
-                    Text(location,
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 12,
+                        color: Color(0xFF9CA3AF),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        location,
                         style: const TextStyle(
-                            fontSize: 11, color: Color(0xFF6B7280))),
-                    const Spacer(),
-                    Text(date,
+                          fontSize: 11,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        date,
                         style: const TextStyle(
-                            fontSize: 11, color: Color(0xFF9CA3AF))),
-                  ]),
+                          fontSize: 11,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 4),
-                  Row(children: [
-                    const Icon(Icons.person_outline,
-                        size: 12, color: Color(0xFF9CA3AF)),
-                    const SizedBox(width: 4),
-                    Text(officerName,
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.person_outline,
+                        size: 12,
+                        color: Color(0xFF9CA3AF),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        officerName,
                         style: TextStyle(
-                            fontSize: 11,
-                            color: officer.isNotEmpty
-                                ? const Color(0xFF059669)
-                                : const Color(0xFFDC2626),
-                            fontWeight: FontWeight.w500)),
-                  ]),
+                          fontSize: 11,
+                          color: officer.isNotEmpty
+                              ? const Color(0xFF059669)
+                              : const Color(0xFFDC2626),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             );

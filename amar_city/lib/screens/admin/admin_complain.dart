@@ -41,7 +41,7 @@ class _AdminComplaintsState extends State<AdminComplaints> {
     try {
       final data = await supabase
           .from('complaints')
-          .select()
+          .select('*, complaint_upvotes(count)')
           .order('created_at', ascending: false);
       setState(() {
         _allComplaints = (data as List)
@@ -50,7 +50,21 @@ class _AdminComplaintsState extends State<AdminComplaints> {
         _isLoading = false;
       });
     } catch (e) {
-      setState(() => _isLoading = false);
+      // upvote join fail হলে fallback — plain select
+      try {
+        final data = await supabase
+            .from('complaints')
+            .select()
+            .order('created_at', ascending: false);
+        setState(() {
+          _allComplaints = (data as List)
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList();
+          _isLoading = false;
+        });
+      } catch (_) {
+        setState(() => _isLoading = false);
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), duration: const Duration(seconds: 5)),
@@ -443,6 +457,49 @@ class _AdminComplaintsState extends State<AdminComplaints> {
                       Text(date, style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 11)),
                     ],
                   ),
+                  // Upvote count badge
+                  Builder(builder: (_) {
+                    final raw = c['complaint_upvotes'];
+                    int upvotes = 0;
+                    if (raw is List && raw.isNotEmpty) {
+                      upvotes = (raw.first['count'] as num? ?? 0).toInt();
+                    }
+                    if (upvotes == 0) return const SizedBox.shrink();
+                    final color = upvotes >= 20
+                        ? const Color(0xFFDC2626)
+                        : upvotes >= 10
+                            ? const Color(0xFFF59E0B)
+                            : const Color(0xFF6366F1);
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.thumb_up_alt_rounded, size: 12, color: color),
+                          const SizedBox(width: 4),
+                          Text('$upvotes জন ভুক্তভোগী',
+                              style: TextStyle(
+                                  color: color,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600)),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              upvotes >= 20 ? 'অত্যন্ত জরুরি' : upvotes >= 10 ? 'উচ্চ অগ্রাধিকার' : 'মধ্যম অগ্রাধিকার',
+                              style: TextStyle(
+                                  color: color,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
                   if (dept.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Container(

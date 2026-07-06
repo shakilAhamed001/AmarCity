@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/supabase_service.dart';
+import 'location_picker_screen.dart';
 
 // CitizenReportScreen — নতুন complaint submit করার screen
 class CitizenReportScreen extends StatefulWidget {
@@ -297,14 +298,10 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
               hint: 'e.g. Large pothole causing accidents...',
             ),
             const SizedBox(height: 24),
-            // Location field
+            // Location field — type করা বা map থেকে pick করা যাবে
             _buildSectionTitle('LOCATION'),
             const SizedBox(height: 12),
-            _buildTextField(
-              controller: _locationController,
-              hint: 'e.g. Mirpur Road, Dhaka',
-              icon: Icons.location_on_outlined,
-            ),
+            _buildLocationField(),
             const SizedBox(height: 24),
             // Description field — multiline
             _buildSectionTitle('DESCRIPTION'),
@@ -350,6 +347,50 @@ class _CitizenReportScreenState extends State<CitizenReportScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // Location field — text input + map picker button
+  Widget _buildLocationField() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildTextField(
+            controller: _locationController,
+            hint: 'e.g. Mirpur Road, Dhaka',
+            icon: Icons.location_on_outlined,
+          ),
+        ),
+        const SizedBox(width: 10),
+        GestureDetector(
+          onTap: () async {
+            final result = await Navigator.of(context).push<String>(
+              MaterialPageRoute(
+                builder: (_) => LocationPickerScreen(
+                  initialLocation: _locationController.text,
+                ),
+              ),
+            );
+            if (result != null && result.isNotEmpty) {
+              setState(() => _locationController.text = result);
+            }
+          },
+          child: Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E40AF).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFF1E40AF).withOpacity(0.3)),
+            ),
+            child: const Icon(
+              Icons.map_outlined,
+              color: Color(0xFF1E40AF),
+              size: 24,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

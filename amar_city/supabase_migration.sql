@@ -138,3 +138,10 @@ CREATE POLICY "all_authenticated_read_messages" ON public.complaint_messages
 -- authenticated user নিজের নামে INSERT করতে পারবে
 CREATE POLICY "authenticated_insert_message" ON public.complaint_messages
   FOR INSERT WITH CHECK (sender_id = auth.uid());
+
+-- ============================================================
+-- Google Maps: complaints table এ location columns যোগ করা
+-- ============================================================
+ALTER TABLE public.complaints
+  ADD COLUMN IF NOT EXISTS latitude  DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;

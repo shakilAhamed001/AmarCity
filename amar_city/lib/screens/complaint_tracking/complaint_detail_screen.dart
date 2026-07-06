@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../services/supabase_service.dart';
 import '../../services/notification_service.dart';
 import '../citizen/feedback_screen.dart';
@@ -27,13 +29,16 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
   List<Map<String, dynamic>> _history = [];
   Map<String, dynamic>? _officerProfile;
   Map<String, dynamic>? _citizenProfile;
-  Map<String, dynamic>? _feedback; // Admin/Officer এর জন্য feedback data
+  Map<String, dynamic>? _feedback;
   bool _isLoading = true;
   bool _isUpdating = false;
   String? _updatingStatus;
   final _commentController = TextEditingController();
   bool _feedbackSubmitted = false;
   Uint8List? _afterImageBytes;
+  int _upvoteCount = 0;
+  bool _hasUpvoted = false;
+  bool _isUpvoting = false;
 
   static const _statuses = ['New', 'In progress', 'Resolved'];
 
@@ -72,11 +77,67 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
   }
 
   // showLoading false হলে spinner দেখাবে না — status update এর পরে reload এর জন্য
+  Future<void> _loadUpvotes() async {
+    try {
+      final complaintId = _complaint['id'].toString();
+      final rows = await supabase
+          .from('complaint_upvotes')
+          .select('user_id')
+          .eq('complaint_id', complaintId);
+      final list = List<Map<String, dynamic>>.from(rows);
+      final uid = AuthService.currentUser?.id;
+      if (mounted) {
+        setState(() {
+          _upvoteCount = list.length;
+          _hasUpvoted = uid != null && list.any((r) => r['user_id'] == uid);
+        });
+      }
+    } catch (e) {
+      debugPrint('Upvote load error: $e');
+    }
+  }
+
+  Future<void> _toggleUpvote() async {
+    final uid = AuthService.currentUser?.id;
+    if (uid == null || _isUpvoting) return;
+    // নিজের complaint এ upvote করা যাবে না
+    if (_complaint['citizen_id']?.toString() == uid) return;
+    setState(() => _isUpvoting = true);
+    try {
+      final complaintId = _complaint['id'].toString();
+      if (_hasUpvoted) {
+        await supabase
+            .from('complaint_upvotes')
+            .delete()
+            .eq('complaint_id', complaintId)
+            .eq('user_id', uid);
+        setState(() {
+          _hasUpvoted = false;
+          _upvoteCount--;
+        });
+      } else {
+        await supabase.from('complaint_upvotes').insert({
+          'complaint_id': complaintId,
+          'user_id': uid,
+        });
+        setState(() {
+          _hasUpvoted = true;
+          _upvoteCount++;
+        });
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _isUpvoting = false);
+    }
+  }
+
   Future<void> _loadDetails({bool showLoading = true}) async {
     if (showLoading) setState(() => _isLoading = true);
     try {
       _history = await NotificationService.fetchStatusHistory(
           _complaint['id'].toString());
+      await _loadUpvotes();
 
       // Citizen হলে আগে feedback দেওয়া হয়েছে কিনা check করা
       if (widget.viewerRole == 'Citizen') {
@@ -231,6 +292,15 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
             style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
+      floatingActionButton: (widget.viewerRole == 'Citizen' ||
+              widget.viewerRole == 'Officer')
+          ? FloatingActionButton(
+              onPressed: _openChat,
+              backgroundColor: const Color(0xFF1E40AF),
+              child: const Icon(Icons.chat_bubble_rounded,
+                  color: Colors.white, size: 22),
+            )
+          : null,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -239,6 +309,8 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildStatusBanner(status, statusColor),
+                  const SizedBox(height: 16),
+                  _buildUpvoteCard(),
                   const SizedBox(height: 16),
                   _buildInfoCard(),
                   const SizedBox(height: 16),
@@ -258,9 +330,6 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                   const SizedBox(height: 16),
                   if (widget.viewerRole == 'Officer') _buildStatusUpdatePanel(),
                   if (widget.viewerRole == 'Admin') _buildViewReportButton(),
-                  if (widget.viewerRole == 'Citizen' ||
-                      widget.viewerRole == 'Officer')
-                    _buildChatButton(),
                   if (_complaint['image_urls'] != null ||
                       _complaint['after_image_url'] != null)
                     const SizedBox(height: 16),
@@ -409,31 +478,84 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
     );
   }
 
-  Widget _buildChatButton() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: SizedBox(
-        width: double.infinity,
-        height: 46,
-        child: ElevatedButton.icon(
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => ChatScreen(
-              complaint: _complaint,
-              viewerRole: widget.viewerRole,
-            ),
-          )),
-          icon: const Icon(Icons.chat_bubble_outline_rounded,
-              color: Colors.white, size: 18),
-          label: const Text('Open Chat',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF059669),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
-            elevation: 0,
+  void _openChat() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (_, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFFF0F4F8),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar + header
+              Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1E40AF),
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        const Icon(Icons.chat_bubble_rounded,
+                            color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Complaint Chat',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15)),
+                              Text(
+                                _complaint['title'] ?? '',
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 11),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(Icons.close,
+                              color: Colors.white70, size: 20),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Chat content
+              Expanded(
+                child: ChatContent(
+                  complaint: _complaint,
+                  viewerRole: widget.viewerRole,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -466,6 +588,152 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildUpvoteCard() {
+    final uid = AuthService.currentUser?.id;
+    final isOwner = _complaint['citizen_id']?.toString() == uid;
+    final isResolved = _complaint['status'] == 'Resolved';
+
+    // Admin/Officer এর জন্য শুধু count দেখাবে, upvote button না
+    if (widget.viewerRole != 'Citizen') {
+      return _card(
+        child: Row(
+          children: [
+            const Icon(Icons.thumb_up_alt_outlined, color: Color(0xFF6366F1), size: 20),
+            const SizedBox(width: 10),
+            Text('$_upvoteCount জন ভুক্তভোগী',
+                style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1F2937))),
+            const Spacer(),
+            if (_upvoteCount > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _priorityColor(_upvoteCount).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  _priorityLabel(_upvoteCount),
+                  style: TextStyle(
+                      color: _priorityColor(_upvoteCount),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
+    // Citizen এর জন্য upvote button
+    return _card(
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.people_outline, color: Color(0xFF6366F1), size: 18),
+                    const SizedBox(width: 6),
+                    Text('$_upvoteCount জন ভুক্তভোগী',
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1F2937))),
+                    const SizedBox(width: 8),
+                    if (_upvoteCount > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: _priorityColor(_upvoteCount).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Text(
+                          _priorityLabel(_upvoteCount),
+                          style: TextStyle(
+                              color: _priorityColor(_upvoteCount),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                  ],
+                ),
+                if (!isOwner && !isResolved)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Text(
+                      'আপনিও এই সমস্যায় ভুক্তভোগী হলে জানান',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (!isOwner && !isResolved)
+            GestureDetector(
+              onTap: _isUpvoting ? null : _toggleUpvote,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: _hasUpvoted
+                      ? const Color(0xFF6366F1)
+                      : const Color(0xFF6366F1).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFF6366F1).withOpacity(0.4),
+                  ),
+                ),
+                child: _isUpvoting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Color(0xFF6366F1)))
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _hasUpvoted
+                                ? Icons.thumb_up_alt_rounded
+                                : Icons.thumb_up_alt_outlined,
+                            color: _hasUpvoted ? Colors.white : const Color(0xFF6366F1),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _hasUpvoted ? 'ভুক্তভোগী আছি' : 'আমিও ভুক্তভোগী',
+                            style: TextStyle(
+                                color: _hasUpvoted ? Colors.white : const Color(0xFF6366F1),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _priorityLabel(int count) {
+    if (count >= 20) return 'অত্যন্ত জরুরি';
+    if (count >= 10) return 'উচ্চ অগ্রাধিকার';
+    if (count >= 5)  return 'মধ্যম অগ্রাধিকার';
+    return 'সাধারণ';
+  }
+
+  Color _priorityColor(int count) {
+    if (count >= 20) return const Color(0xFFDC2626);
+    if (count >= 10) return const Color(0xFFF59E0B);
+    if (count >= 5)  return const Color(0xFF6366F1);
+    return const Color(0xFF6B7280);
   }
 
   Widget _buildStatusBanner(String status, Color color) {
@@ -531,7 +799,7 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
               style: const TextStyle(
                   fontSize: 13, color: Color(0xFF4B5563), height: 1.5)),
           const SizedBox(height: 12),
-          _infoRow(Icons.location_on_outlined, location),
+          _locationRow(location),
           if (dept.isNotEmpty) ...[
             const SizedBox(height: 6),
             _infoRow(Icons.business_outlined, dept),
@@ -1064,6 +1332,122 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
         border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: child,
+    );
+  }
+
+  Widget _locationRow(String location) {
+    return GestureDetector(
+      onTap: location.isNotEmpty ? () => _showLocationMap(location) : null,
+      child: Row(
+        children: [
+          const Icon(Icons.location_on_outlined, size: 15, color: Color(0xFF6B7280)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              location,
+              style: const TextStyle(color: Color(0xFF4B5563), fontSize: 13),
+            ),
+          ),
+          if (location.isNotEmpty)
+            const Icon(Icons.map_outlined, size: 15, color: Color(0xFF1E40AF)),
+        ],
+      ),
+    );
+  }
+
+  void _showLocationMap(String location) {
+    // lat,lng format parse করার চেষ্টা
+    LatLng center = const LatLng(23.8103, 90.4125);
+    bool hasPrecisePin = false;
+    final parts = location.split(',');
+    if (parts.length == 2) {
+      final lat = double.tryParse(parts[0].trim());
+      final lng = double.tryParse(parts[1].trim());
+      if (lat != null && lng != null) {
+        center = LatLng(lat, lng);
+        hasPrecisePin = true;
+      }
+    }
+    final pinLatLng = center;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        height: MediaQuery.of(context).size.height * 0.65,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD1D5DB),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on, color: Color(0xFFDC2626), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      location,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1F2937)),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                child: FlutterMap(
+                  options: MapOptions(
+                    initialCenter: center,
+                    initialZoom: hasPrecisePin ? 16 : 13,
+                    interactionOptions: const InteractionOptions(
+                      flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                    ),
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.amarcity.app',
+                    ),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: pinLatLng,
+                          width: 48,
+                          height: 48,
+                          child: const Icon(
+                            Icons.location_pin,
+                            color: Color(0xFFDC2626),
+                            size: 48,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -1,11 +1,9 @@
-// ChatScreen — Complaint thread এর in-app chat
-// Citizen ও Officer একটি complaint এর মধ্যে real-time message করতে পারে
-// Supabase Realtime দিয়ে live updates, date separator ও optimistic send support
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/supabase_service.dart';
 
-class ChatScreen extends StatefulWidget {
+// Thin wrapper — kept so any existing Navigator.push(ChatScreen) still works
+class ChatScreen extends StatelessWidget {
   final Map<String, dynamic> complaint;
   final String viewerRole;
 
@@ -16,15 +14,51 @@ class ChatScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF0F4F8),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1E40AF),
+        foregroundColor: Colors.white,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Complaint Chat',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(
+              complaint['title'] ?? '',
+              style: const TextStyle(fontSize: 11, color: Colors.white70),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+        elevation: 0,
+      ),
+      body: ChatContent(complaint: complaint, viewerRole: viewerRole),
+    );
+  }
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+// Public reusable chat body — used in bottom sheet from complaint_detail_screen
+class ChatContent extends StatefulWidget {
+  final Map<String, dynamic> complaint;
+  final String viewerRole;
+
+  const ChatContent({
+    Key? key,
+    required this.complaint,
+    required this.viewerRole,
+  }) : super(key: key);
+
+  @override
+  State<ChatContent> createState() => _ChatContentState();
+}
+
+class _ChatContentState extends State<ChatContent> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final List<Map<String, dynamic>> _messages = [];
-  // sender profile cache — বারবার DB call এড়াতে
-  // Sender profile memory cache — একই sender এর জন্য বারবার DB call এড়াতে
   final Map<String, Map<String, dynamic>> _profileCache = {};
   bool _isLoading = true;
   bool _isSending = false;
@@ -48,7 +82,6 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
-  // Cache থেকে profile return করে, না থাকলে DB থেকে fetch করে cache তৈরি করে
   Future<Map<String, dynamic>> _getProfile(String userId) async {
     if (_profileCache.containsKey(userId)) return _profileCache[userId]!;
     try {
@@ -57,7 +90,8 @@ class _ChatScreenState extends State<ChatScreen> {
           .select('full_name, role')
           .eq('id', userId)
           .maybeSingle();
-      final profile = data != null ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+      final profile =
+          data != null ? Map<String, dynamic>.from(data) : <String, dynamic>{};
       _profileCache[userId] = profile;
       return profile;
     } catch (_) {
@@ -65,7 +99,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // DB থেকে সব পুরনো message load করা — পুরনো আগে
   Future<void> _fetchMessages() async {
     try {
       final data = await supabase
@@ -74,10 +107,12 @@ class _ChatScreenState extends State<ChatScreen> {
           .eq('complaint_id', _complaintId)
           .order('created_at', ascending: true);
 
-      final list = (data as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      final list = (data as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
 
-      // সব unique sender এর profile একসাথে fetch করা হচ্ছে
-      final senderIds = list.map((m) => m['sender_id'].toString()).toSet();
+      final senderIds =
+          list.map((m) => m['sender_id'].toString()).toSet();
       for (final id in senderIds) {
         await _getProfile(id);
       }
@@ -96,8 +131,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // Realtime subscription — অন্যজনের নতুন message তাৎক্ষণিক দেখাবে
-  // নিজের পাঠানো message skip করা হয় — optimistic add আগেই হয়েছে
   void _subscribeRealtime() {
     _channel = supabase
         .channel('chat:$_complaintId')
@@ -113,15 +146,11 @@ class _ChatScreenState extends State<ChatScreen> {
           callback: (payload) async {
             final newMsg = Map<String, dynamic>.from(payload.newRecord);
             final senderId = newMsg['sender_id']?.toString() ?? '';
-
-            // নিজের message realtime এ আসলে skip করা — optimistic add করা হয়েছে
             if (senderId == _currentUserId) return;
-
-            // DB এ id match করে duplicate check
             final msgId = newMsg['id']?.toString();
-            final alreadyExists = _messages.any((m) => m['id']?.toString() == msgId);
+            final alreadyExists =
+                _messages.any((m) => m['id']?.toString() == msgId);
             if (alreadyExists) return;
-
             await _getProfile(senderId);
             if (mounted) {
               setState(() => _messages.add(newMsg));
@@ -132,8 +161,6 @@ class _ChatScreenState extends State<ChatScreen> {
         .subscribe();
   }
 
-  // Message send করা — optimistic UI দিয়ে সাথে সাথে দেখানো হবে
-  // DB confirm হলে real message দিয়ে replace, error হলে remove
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _isSending) return;
@@ -141,7 +168,6 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _isSending = true);
     _controller.clear();
 
-    // Optimistic message — সাথে সাথে UI তে দেখানো হচ্ছে
     final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
     final optimisticMsg = {
       'id': tempId,
@@ -167,7 +193,6 @@ class _ChatScreenState extends State<ChatScreen> {
           .select()
           .single();
 
-      // Optimistic message কে real message দিয়ে replace করা হচ্ছে
       if (mounted) {
         setState(() {
           final idx = _messages.indexWhere((m) => m['id'] == tempId);
@@ -177,7 +202,6 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       }
     } catch (e) {
-      // error হলে optimistic message সরিয়ে দেওয়া হচ্ছে
       if (mounted) {
         setState(() => _messages.removeWhere((m) => m['id'] == tempId));
         ScaffoldMessenger.of(context)
@@ -188,7 +212,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // List এর শেষে scroll করা — নতুন message আসলে বা পাঠালে
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -203,45 +226,21 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1E40AF),
-        foregroundColor: Colors.white,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Complaint Chat',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            Text(
-              widget.complaint['title'] ?? '',
-              style: const TextStyle(fontSize: 11, color: Colors.white70),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+    return Column(
+      children: [
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _messages.isEmpty
+                  ? _buildEmptyState()
+                  : _buildMessageList(),
         ),
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _messages.isEmpty
-                    ? _buildEmptyState()
-                    : _buildMessageList(),
-          ),
-          _buildInputBar(),
-        ],
-      ),
+        _buildInputBar(),
+      ],
     );
   }
 
-  // Date separator সহ message list build করা
-  // একই দিনের messages এর আগে 'Today'/'Yesterday'/date দেখাবে
   Widget _buildMessageList() {
-    // Date separator সহ list তৈরি করা হচ্ছে
     final items = <_ChatItem>[];
     String? lastDateLabel;
 
@@ -266,7 +265,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // Date separator widget — messages এর মাঝখানে দিন দেখানো
   Widget _buildDateSeparator(String label) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -316,8 +314,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // Message bubble widget — নিজের message ডানে (nীল), অন্যের বামে (সাদা)
-  // Pending message এ opacity কম, confirm হলে tick দেখাবে
   Widget _buildMessageBubble(Map<String, dynamic> msg) {
     final isMine = msg['sender_id'] == _currentUserId;
     final isPending = msg['_pending'] == true;
@@ -386,9 +382,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: Text(
                       text,
                       style: TextStyle(
-                        color: isMine
-                            ? Colors.white
-                            : const Color(0xFF1F2937),
+                        color: isMine ? Colors.white : const Color(0xFF1F2937),
                         fontSize: 14,
                         height: 1.4,
                       ),
@@ -396,8 +390,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
                 Padding(
-                  padding:
-                      const EdgeInsets.only(top: 4, left: 4, right: 4),
+                  padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -410,8 +403,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           width: 10,
                           height: 10,
                           child: CircularProgressIndicator(
-                              strokeWidth: 1.5,
-                              color: Color(0xFF9CA3AF)),
+                              strokeWidth: 1.5, color: Color(0xFF9CA3AF)),
                         ),
                       ] else if (isMine) ...[
                         const SizedBox(width: 4),
@@ -430,7 +422,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // Sender এর first letter দিয়ে avatar circle
   Widget _buildAvatar(String name, String role) {
     final color = role == 'Officer'
         ? const Color(0xFF059669)
@@ -438,22 +429,20 @@ class _ChatScreenState extends State<ChatScreen> {
     return Container(
       width: 32,
       height: 32,
-      decoration: BoxDecoration(
-          color: color.withOpacity(0.15), shape: BoxShape.circle),
+      decoration:
+          BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
       child: Center(
         child: Text(
           name.isNotEmpty ? name[0].toUpperCase() : '?',
-          style: TextStyle(
-              color: color, fontWeight: FontWeight.bold, fontSize: 13),
+          style:
+              TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13),
         ),
       ),
     );
   }
 
-  // Role badge — Citizen/Officer রংহীন ছোট label
   Widget _buildRoleBadge(String role) {
-    final isOfficer = role == 'Officer';
-    final color = isOfficer
+    final color = role == 'Officer'
         ? const Color(0xFF059669)
         : const Color(0xFF1E40AF);
     return Container(
@@ -463,12 +452,11 @@ class _ChatScreenState extends State<ChatScreen> {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(role,
-          style: TextStyle(
-              color: color, fontSize: 9, fontWeight: FontWeight.w600)),
+          style:
+              TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w600)),
     );
   }
 
-  // Bottom input bar — text field + send button
   Widget _buildInputBar() {
     return Container(
       padding: EdgeInsets.only(
@@ -491,27 +479,24 @@ class _ChatScreenState extends State<ChatScreen> {
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
                 hintText: 'Type a message...',
-                hintStyle: const TextStyle(
-                    color: Color(0xFFB4B4B4), fontSize: 14),
+                hintStyle:
+                    const TextStyle(color: Color(0xFFB4B4B4), fontSize: 14),
                 filled: true,
                 fillColor: const Color(0xFFF9FAFB),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
-                  borderSide:
-                      const BorderSide(color: Color(0xFFE5E7EB)),
+                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
-                  borderSide:
-                      const BorderSide(color: Color(0xFFE5E7EB)),
+                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
-                  borderSide:
-                      const BorderSide(color: Color(0xFF1E40AF)),
+                  borderSide: const BorderSide(color: Color(0xFF1E40AF)),
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 10),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               ),
               onSubmitted: (_) => _sendMessage(),
             ),
@@ -541,7 +526,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // ISO timestamp কে HH:mm format এ convert করা
   String _formatTime(String? iso) {
     if (iso == null) return '';
     final dt = DateTime.tryParse(iso)?.toLocal();
@@ -551,7 +535,6 @@ class _ChatScreenState extends State<ChatScreen> {
     return '$h:$m';
   }
 
-  // দিনের label তৈরি করা — Today/Yesterday/তারিখ অনুযায়ী
   String _dateLabel(String? iso) {
     if (iso == null) return '';
     final dt = DateTime.tryParse(iso)?.toLocal();
@@ -564,15 +547,13 @@ class _ChatScreenState extends State<ChatScreen> {
     if (msgDay == today) return 'Today';
     if (msgDay == yesterday) return 'Yesterday';
     const months = [
-      'Jan','Feb','Mar','Apr','May','Jun',
-      'Jul','Aug','Sep','Oct','Nov','Dec'
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
 }
 
-// List item model — date separator বা message
-// ChatItem — date separator বা message bubble represent করার model
 class _ChatItem {
   final bool isDateSeparator;
   final String? dateLabel;
