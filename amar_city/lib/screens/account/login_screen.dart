@@ -93,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   // Login button press করলে call হয়
-  // Validation → Supabase signIn → role check → navigate
+  // Validation → phone হলে email lookup → Supabase signIn → role check → navigate
   void _handleSignIn() async {
     final l10n = AppLocalizations.of(context)!;
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
@@ -103,8 +103,38 @@ class _LoginScreenState extends State<LoginScreen>
     }
     setState(() => _isLoading = true);
     try {
+      String loginEmail = _emailController.text.trim();
+
+      // Phone number দিলে profiles table থেকে email খুঁজে নেওয়া
+      final input = loginEmail;
+      final isPhone = !input.contains('@');
+      if (isPhone) {
+        // BD number normalize: 01X → +8801X
+        String normalized = input.replaceAll(RegExp(r'\s+|-'), '');
+        if (normalized.startsWith('0')) normalized = '+88$normalized';
+        else if (normalized.startsWith('88')) normalized = '+$normalized';
+        else if (!normalized.startsWith('+')) normalized = '+88$normalized';
+
+        final row = await supabase
+            .from('profiles')
+            .select('email')
+            .or('phone.eq.$input,phone.eq.$normalized')
+            .maybeSingle();
+
+        if (row == null || row['email'] == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No account found with this phone number.')),
+            );
+          }
+          setState(() => _isLoading = false);
+          return;
+        }
+        loginEmail = row['email'] as String;
+      }
+
       final response = await AuthService.signIn(
-        email: _emailController.text.trim(),
+        email: loginEmail,
         password: _passwordController.text,
       );
       if (response.user != null && mounted) {
@@ -293,7 +323,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     fontSize: 13,
                                     color: Colors.white.withOpacity(0.7))),
                             const SizedBox(height: 25),
-                            Text(l10n.emailAddress,
+                            Text('Email or Phone Number',
                                 style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -305,8 +335,8 @@ class _LoginScreenState extends State<LoginScreen>
                               keyboardType: TextInputType.emailAddress,
                               style: const TextStyle(color: Colors.white),
                               decoration: _fieldDecoration(
-                                hint: l10n.emailHint,
-                                icon: Icons.email_outlined,
+                                hint: 'email@example.com or 01XXXXXXXXX',
+                                icon: Icons.person_outline,
                               ),
                             ),
                             const SizedBox(height: 20),

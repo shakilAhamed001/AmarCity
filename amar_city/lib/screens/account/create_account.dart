@@ -17,6 +17,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
     with TickerProviderStateMixin {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
+  late TextEditingController _phoneController;
   late TextEditingController _passwordController;
   late TextEditingController _confirmPasswordController;
   bool _obscurePassword = true;
@@ -48,6 +49,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
     super.initState();
     _nameController = TextEditingController();
     _emailController = TextEditingController();
+    _phoneController = TextEditingController();
     _passwordController = TextEditingController();
     _confirmPasswordController = TextEditingController();
     _buildStars();
@@ -105,6 +107,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _starCtrl.dispose();
@@ -152,6 +155,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
         name: _nameController.text.trim(),
         role: _selectedRole,
         department: _selectedDepartment,
+        phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
       );
       if (response.user != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -310,6 +314,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
                               icon: Icons.email_outlined,
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              label: 'PHONE NUMBER (optional)',
+                              hint: '01XXXXXXXXX',
+                              icon: Icons.phone_outlined,
+                              controller: _phoneController,
+                              keyboardType: TextInputType.phone,
                             ),
                             const SizedBox(height: 16),
                             _buildPasswordField(

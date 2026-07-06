@@ -15,6 +15,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   // Personal info controllers
   late TextEditingController _nameController;
   late TextEditingController _emailController;
+  late TextEditingController _phoneController;
   // Address field controllers
   late TextEditingController _houseController;
   late TextEditingController _streetController;
@@ -33,8 +34,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final user = AuthService.currentUser;
     _nameController = TextEditingController(
         text: user?.userMetadata?['full_name'] ?? '');
-    // Email read-only — এখানে change করা যাবে না
     _emailController = TextEditingController(text: user?.email ?? '');
+    _phoneController = TextEditingController();
     // Address controllers শুরুতে empty — database থেকে load হবে
     _houseController = TextEditingController();
     _streetController = TextEditingController();
@@ -54,11 +55,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       // শুধু address related fields আনা হচ্ছে — current user এর জন্য
       final data = await supabase
           .from('profiles')
-          .select('house_number, street_name, ward_number, city, state, postal_code, country')
+          .select('phone, house_number, street_name, ward_number, city, state, postal_code, country')
           .eq('id', AuthService.currentUser!.id)
           .single();
       // Database থেকে আনা data দিয়ে controllers update করা হচ্ছে
       setState(() {
+        _phoneController.text = data['phone'] ?? '';
         _houseController.text = data['house_number'] ?? '';
         _streetController.text = data['street_name'] ?? '';
         _wardController.text = data['ward_number'] ?? '';
@@ -75,6 +77,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     // Memory leak এড়াতে সব controller dispose করা হচ্ছে
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _houseController.dispose();
     _streetController.dispose();
     _wardController.dispose();
@@ -103,6 +106,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       // profiles table এ নাম ও address update করা হচ্ছে
       await supabase.from('profiles').update({
         'full_name': _nameController.text.trim(),
+        'phone': _phoneController.text.trim(),
         'house_number': _houseController.text.trim(),
         'street_name': _streetController.text.trim(),
         'ward_number': _wardController.text.trim(),
@@ -204,6 +208,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 4),
             // Email read-only এর কারণ জানানো হচ্ছে
             const Text('Email cannot be changed here.',
+                style: TextStyle(fontSize: 11, color: Colors.grey)),
+            const SizedBox(height: 16),
+            _buildField(
+              label: 'PHONE NUMBER',
+              controller: _phoneController,
+              icon: Icons.phone_outlined,
+              hint: 'e.g. 01XXXXXXXXX',
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 4),
+            const Text('SMS alert পাঠানো হবে এই নম্বরে।',
                 style: TextStyle(fontSize: 11, color: Colors.grey)),
 
             const SizedBox(height: 28),

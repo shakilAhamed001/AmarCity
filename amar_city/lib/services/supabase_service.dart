@@ -16,6 +16,7 @@ class AuthService {
     required String name,
     required String role,
     String? department,
+    String? phone,
   }) async {
     final response = await supabase.auth.signUp(
       email: email,
@@ -24,10 +25,19 @@ class AuthService {
         'full_name': name,
         'role': role,
         if (department != null) 'department': department,
+        if (phone != null) 'phone': phone,
       },
       emailRedirectTo: null,
     );
-    // profiles table এ insert এখন Supabase trigger করে দেবে automatically
+    // signup এর পরে profiles table এ phone update করা হচ্ছে
+    if (response.user != null && phone != null && phone.isNotEmpty) {
+      try {
+        await supabase
+            .from('profiles')
+            .update({'phone': phone})
+            .eq('id', response.user!.id);
+      } catch (_) {}
+    }
     return response;
   }
 
